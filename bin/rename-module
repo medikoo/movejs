@@ -1,0 +1,17 @@
+#!/usr/bin/env node
+
+'use strict';
+
+Error.stackTraceLimit = Infinity;
+
+// Prevent EMFILE errors
+require('fs2/descriptors-handler')();
+
+var args = process.argv.slice(2);
+
+if (args.length !== 2) {
+	console.error('Usage: rename-module sourcePath destPath');
+	process.exit(1);
+}
+
+require('../')(args[0], args[1]).done();
