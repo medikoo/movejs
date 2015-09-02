@@ -105,26 +105,29 @@ module.exports = function (from, to) {
 				var dir = dirname(from), ext = extname(from);
 				code = String(code);
 				if (ext && (ext !== '.js')) return code;
-				return deferred.map(findRequires(code, findRequiresOpts).filter(function (data) {
-					return !isPathExternal(data.value);
-				}), function (data) {
-					return resolveModule(dir, data.value)(function (path) {
-						data.modulePath = path;
-						return data;
+				return isJsModule(from)(function (isJs) {
+					if (!isJs) return code;
+					return deferred.map(findRequires(code, findRequiresOpts).filter(function (data) {
+						return !isPathExternal(data.value);
+					}), function (data) {
+						return resolveModule(dir, data.value)(function (path) {
+							data.modulePath = path;
+							return data;
+						});
+					})(function (requires) {
+						var diff = 0, dir = dirname(to);
+						requires.forEach(function (reqData) {
+							var nuPath = relative(dir, reqData.modulePath)
+							  , nuPathExt = extname(nuPath);
+							if (nuPath[0] !== '.') nuPath = './' + nuPath;
+							var nuRaw = stringify((nuPathExt && !extname(reqData.value))
+								? nuPath.slice(0, -nuPathExt.length) : nuPath).slice(1, -1);
+							code = code.slice(0, reqData.point + diff) + nuRaw +
+								code.slice(reqData.point + diff + reqData.raw.length - 2);
+							diff += nuRaw.length - (reqData.raw.length - 2);
+						});
+						return code;
 					});
-				})(function (requires) {
-					var diff = 0, dir = dirname(to);
-					requires.forEach(function (reqData) {
-						var nuPath = relative(dir, reqData.modulePath)
-						  , nuPathExt = extname(nuPath);
-						if (nuPath[0] !== '.') nuPath = './' + nuPath;
-						var nuRaw = stringify((nuPathExt && !extname(reqData.value))
-							? nuPath.slice(0, -nuPathExt.length) : nuPath).slice(1, -1);
-						code = code.slice(0, reqData.point + diff) + nuRaw +
-							code.slice(reqData.point + diff + reqData.raw.length - 2);
-						diff += nuRaw.length - (reqData.raw.length - 2);
-					});
-					return code;
 				});
 			});
 		})(function (nuCode) {
