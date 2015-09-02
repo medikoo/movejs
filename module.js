@@ -128,7 +128,8 @@ module.exports = function (from, to) {
 				});
 			});
 		})(function (nuCode) {
-			return deferred(writeFile(to, nuCode, { mode: fileStats.mode }), unlink(from));
+			return deferred(writeFile(to, nuCode, { mode: fileStats.mode, intermediate: true }),
+				unlink(from));
 		});
 	});
 };
