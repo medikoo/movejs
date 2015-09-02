@@ -19,7 +19,7 @@ module.exports = function (t, a, d) {
 						'require(\'./inner/twodepth/elo/miszka\');\n', "Moved module");
 				}),
 				readFile(resolve(pgWorkingPath, 'foo.js'))(function (code) {
-					a(String(code), 'require(\'./top-bar\');\nrequire(\'./inner/twodepth/elo\');\n' +
+					a(String(code), 'require(\'./top-bar\');\nrequire(\'./inner/twodepth/marko\');\n' +
 						'require(\'./top-bar\');\n', "Root module");
 				}),
 				readFile(resolve(pgWorkingPath, 'inner/twodepth/marko.js'))(function (code) {
