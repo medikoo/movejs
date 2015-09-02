@@ -102,9 +102,9 @@ module.exports = function (from, to) {
 		})(function () {
 			// Rename module, and update require paths within it
 			return readFile(from)(function (code) {
-				var dir = dirname(from);
+				var dir = dirname(from), ext = extname(from);
 				code = String(code);
-				if (extname(from) !== '.js') return code;
+				if (ext && (ext !== '.js')) return code;
 				return deferred.map(findRequires(code, findRequiresOpts).filter(function (data) {
 					return !isPathExternal(data.value);
 				}), function (data) {
