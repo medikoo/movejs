@@ -10,7 +10,7 @@ require('fs2/descriptors-handler')();
 var args = process.argv.slice(2);
 
 if (args.length !== 2) {
-	console.error('Usage: rename-module sourcePath destPath');
+	console.error('Usage: rename-module current/path new/path');
 	process.exit(1);
 }
 
