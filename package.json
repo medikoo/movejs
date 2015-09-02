@@ -16,13 +16,13 @@
   },
   "dependencies": {
     "es5-ext": "^0.10.7",
-    "es6-set": "^0.1.1",
-    "d": "^0.1.1",
-    "event-emitter": "^0.3.3",
-    "timers-ext": "0.1"
+    "cjs-module": "git://github.com/medikoo/cjs-module.git#308e75ec46ce4ed13f43f2de76369283c9",
+    "deferred": "git://github.com/medikoo/deferred.git#d95308484b5db2e5c61defe842e84f4ef425f0c2",
+    "find-requires": "^0.2.2",
+    "fs2": "^0.2.1"
   },
   "devDependencies": {
-    "next-tick": "^0.2.2",
+    "fs-extra": "^0.24",
     "tad": "^0.2.2",
     "xlint": "^0.2.1",
     "xlint-jslint-medikoo": "^0.1.3"
