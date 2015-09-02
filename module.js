@@ -44,7 +44,7 @@ module.exports = function (from, to) {
 				"in scope of some package");
 		}
 		if (!startsWith.call(to, root + sep)) {
-			throw new Error("Cannot reliably move module out of its package");
+			throw new Error("Cannot reliably move module out of current package");
 		}
 
 		// Find all JS modules in a package
