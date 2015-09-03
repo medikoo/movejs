@@ -1,7 +1,6 @@
 'use strict';
 
-var copy           = require('es5-ext/object/copy')
-  , ensureString   = require('es5-ext/object/validate-stringifiable-value')
+var ensureString   = require('es5-ext/object/validate-stringifiable-value')
   , escape         = require('es5-ext/reg-exp/escape')
   , startsWith     = require('es5-ext/string/#/starts-with')
   , deferred       = require('deferred')
