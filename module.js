@@ -18,11 +18,12 @@ var copy           = require('es5-ext/object/copy')
   , isJsModule     = require('./lib/is-js-module')
 
   , push = Array.prototype.push, stringify = JSON.stringify
-  , extname = path.extname, sep = path.sep, dirname = path.dirname
+  , basename = path.basename, extname = path.extname, sep = path.sep, dirname = path.dirname
   , relative = path.relative, resolve = path.resolve
   , findRequiresOpts = { raw: true };
 
 var readdirOpts = { depth: Infinity, type: { file: true }, stream: true,
+	dirFilter: function (path) { return (basename(path) !== 'node_modules'); },
 	ignoreRules: 'git', pattern: new RegExp(escape(sep) + '(?:[^.]+|.+\\.js)$') };
 
 module.exports = function (from, to) {
@@ -36,7 +37,7 @@ module.exports = function (from, to) {
 		if (err.code === 'ENOENT') return null;
 		throw err;
 	}))(function (data) {
-		var fileStats = data[0], root = data[1], opts, dirReader, filePromises, modulesToUpdate;
+		var fileStats = data[0], root = data[1], dirReader, filePromises, modulesToUpdate;
 
 		if (!fileStats.isFile()) throw new Error("Input module " + stringify(from) + " is not a file");
 		if (!root) {
@@ -48,9 +49,7 @@ module.exports = function (from, to) {
 		}
 
 		// Find all JS modules in a package
-		opts = copy(readdirOpts);
-		opts.global = root + sep + 'node_modules';
-		dirReader = readdir(root, opts);
+		dirReader = readdir(root, readdirOpts);
 		filePromises = [];
 		modulesToUpdate = [];
 		dirReader.on('change', function (event) {

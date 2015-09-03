@@ -11,8 +11,10 @@ var ensureString   = require('es5-ext/object/validate-stringifiable-value')
   , moveModule     = require('./module')
 
   , stringify = JSON.stringify
-  , sep = path.sep, resolve = path.resolve
-  , readdirOpts = { depth: Infinity, type: { file: true } };
+  , sep = path.sep, basename = path.basename, resolve = path.resolve
+  , readdirOpts = { depth: Infinity, type: { file: true },
+		ignoreRules: 'git',
+		dirFilter: function (path) { return (basename(path) !== 'node_modules'); } };
 
 module.exports = function (from, to) {
 	from = resolve(ensureString(from));
@@ -43,8 +45,9 @@ module.exports = function (from, to) {
 	})(function () {
 		return rmdir(from, { recursive: true }).catch(function (e) {
 			if (e.code !== 'ENOTEMPTY') throw e;
-			throw new Error("All modules moved. However original directory could not be deleted, due " +
-				"to non-file type files (e.g. symlinks) residing in it");
+			throw new Error("All applicabble modules moved. However original directory could not be " +
+				" removed due to other (non applicable) files " +
+				"(e.g. symlinks, ignored by git, or node_modules content) residing in it");
 		});
 	});
 };
