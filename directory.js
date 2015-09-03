@@ -34,7 +34,7 @@ module.exports = function (from, to) {
 			throw new Error("Unable to resolve package root (renamed directory is expected to be " +
 				"placed in scope of some package");
 		}
-		if (root === from) throw new Error("Reanamed directory should not be package root directory");
+		if (root === from) throw new Error("Renamed directory should not be package root directory");
 		if (!startsWith.call(to, root + sep)) {
 			throw new Error("Cannot reliably move modules out of current package");
 		}
