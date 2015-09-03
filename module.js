@@ -59,9 +59,9 @@ module.exports = function (from, to) {
 			push.apply(filePromises, event.added.map(function (path) {
 				var filename = resolve(root, path);
 				if (filename === from) return;
-				return isModule(filename)(function (isJs) {
+				return isModule(filename)(function (is) {
 					var dir;
-					if (!isJs) return;
+					if (!is) return;
 
 					// Find if JS module contains a require to renamed module
 					dir = dirname(filename);
