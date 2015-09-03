@@ -15,7 +15,7 @@ var ensureString   = require('es5-ext/object/validate-stringifiable-value')
   , resolveModule  = require('cjs-module/resolve')
   , resolveRoot    = require('cjs-module/resolve-package-root')
   , isPathExternal = require('cjs-module/utils/is-path-external')
-  , isJsModule     = require('./lib/is-js-module')
+  , isModule     = require('./lib/is-module')
 
   , push = Array.prototype.push, stringify = JSON.stringify
   , basename = path.basename, extname = path.extname, sep = path.sep, dirname = path.dirname
@@ -58,7 +58,7 @@ module.exports = function (from, to) {
 			push.apply(filePromises, event.added.map(function (path) {
 				var filename = resolve(root, path);
 				if (filename === from) return;
-				return isJsModule(filename)(function (isJs) {
+				return isModule(filename)(function (isJs) {
 					var dir;
 					if (!isJs) return;
 
@@ -108,7 +108,7 @@ module.exports = function (from, to) {
 				var dir = dirname(from), ext = extname(from);
 				code = String(code);
 				if (ext && (ext !== '.js')) return code;
-				return isJsModule(from)(function (isJs) {
+				return isModule(from)(function (isJs) {
 					if (!isJs) return code;
 					return deferred.map(findRequires(code, findRequiresOpts).filter(function (data) {
 						return !isPathExternal(data.value);
