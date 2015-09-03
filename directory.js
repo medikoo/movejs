@@ -7,11 +7,11 @@ var ensureString   = require('es5-ext/object/validate-stringifiable-value')
   , rename         = require('fs2/rename')
   , readdir        = require('fs2/readdir')
   , stat           = require('fs2/stat')
-  , rmdir          = require('fs2/rmdir')
   , path           = require('path')
   , resolveRoot    = require('cjs-module/resolve-package-root')
   , moveModule     = require('./module')
   , isModule       = require('./lib/is-module')
+  , rmdir          = require('./lib/rmdir')
 
   , stringify = JSON.stringify
   , sep = path.sep, basename = path.basename, resolve = path.resolve
@@ -53,12 +53,5 @@ module.exports = function (from, to) {
 				return rename(filename, targetFilename, { intermediate: true });
 			});
 		}, null);
-	})(function () {
-		return rmdir(from, { recursive: true }).catch(function (e) {
-			if (e.code !== 'ENOTEMPTY') throw e;
-			throw new Error("All applicabble modules moved. However original directory could not be " +
-				" removed due to other (non applicable) files " +
-				"(e.g. symlinks, ignored by git, or node_modules content) residing in it");
-		});
-	});
+	})(function () { return rmdir(from); });
 };
