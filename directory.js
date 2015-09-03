@@ -32,7 +32,7 @@ module.exports = function (from, to) {
 		if (err.code === 'ENOENT') return null;
 		throw err;
 	}))(function (data) {
-		var root = data[0];
+		var root = data[0], rootPrefixLength = root.length + 1;
 		if (!root) {
 			throw new Error("Unable to resolve package root (renamed directory is expected to be " +
 				"placed in scope of some package");
@@ -42,13 +42,14 @@ module.exports = function (from, to) {
 			throw new Error("Cannot reliably move modules out of current package");
 		}
 
-		debug('%s -> %s', from.slice(root.length), to.slice(root.length));
+		debug('%s -> %s', from.slice(rootPrefixLength), to.slice(rootPrefixLength));
 		return readdir(from, readdirOpts).reduce(function (ignore, file, index, files) {
 			var filename = resolve(from, file), targetFilename = resolve(to, file);
-			debug('process %s/%s', index + 1, files.length);
+			debug('%s/%s', index + 1, files.length);
 			return isModule(filename)(function (is) {
 				if (is) return moveModule(filename, targetFilename);
-				debug('rename %s to %s', filename.slice(root.length), targetFilename.slice(root.length));
+				debug('rename %s to %s', filename.slice(rootPrefixLength),
+					targetFilename.slice(rootPrefixLength));
 				return rename(filename, targetFilename, { intermediate: true });
 			});
 		}, null);

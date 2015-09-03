@@ -37,7 +37,8 @@ module.exports = function (from, to) {
 		if (err.code === 'ENOENT') return null;
 		throw err;
 	}))(function (data) {
-		var fileStats = data[0], root = data[1], dirReader, filePromises, modulesToUpdate;
+		var fileStats = data[0], root = data[1], dirReader, filePromises, modulesToUpdate
+		  , rootPrefixLength = root.length + 1;
 
 		if (!fileStats.isFile()) throw new Error("Input module " + stringify(from) + " is not a file");
 		if (!root) {
@@ -49,7 +50,7 @@ module.exports = function (from, to) {
 		}
 
 		// Find all JS modules in a package
-		debug('%s -> %s', from.slice(root.length), to.slice(root.length));
+		debug('%s -> %s', from.slice(rootPrefixLength), to.slice(rootPrefixLength));
 		debug('gather local modules at %s', root);
 		dirReader = readdir(root, readdirOpts);
 		filePromises = [];
@@ -99,7 +100,7 @@ module.exports = function (from, to) {
 						code.slice(reqData.point + diff + reqData.raw.length - 2);
 					diff += nuRaw.length - (reqData.raw.length - 2);
 				});
-				debug('rewrite %s', data.filename.slice(root.length));
+				debug('rewrite %s', data.filename.slice(rootPrefixLength));
 				return writeFile(data.filename, code);
 			});
 		})(function () {
@@ -135,7 +136,7 @@ module.exports = function (from, to) {
 				});
 			});
 		})(function (nuCode) {
-			debug('rewrite %s to %s', from.slice(root.length), to.slice(root.length));
+			debug('rewrite %s to %s', from.slice(rootPrefixLength), to.slice(rootPrefixLength));
 			return deferred(writeFile(to, nuCode, { mode: fileStats.mode, intermediate: true }),
 				unlink(from));
 		});
