@@ -4,12 +4,14 @@ var ensureString   = require('es5-ext/object/validate-stringifiable-value')
   , startsWith     = require('es5-ext/string/#/starts-with')
   , deferred       = require('deferred')
   , debug          = require('debug-ext')('rename-module:directory')
+  , rename         = require('fs2/rename')
   , readdir        = require('fs2/readdir')
   , stat           = require('fs2/stat')
   , rmdir          = require('fs2/rmdir')
   , path           = require('path')
   , resolveRoot    = require('cjs-module/resolve-package-root')
   , moveModule     = require('./module')
+  , isModule       = require('./lib/is-module')
 
   , stringify = JSON.stringify
   , sep = path.sep, basename = path.basename, resolve = path.resolve
@@ -42,8 +44,13 @@ module.exports = function (from, to) {
 
 		debug('%s -> %s', from.slice(root.length), to.slice(root.length));
 		return readdir(from, readdirOpts).reduce(function (ignore, file, index, files) {
+			var filename = resolve(from, file), targetFilename = resolve(to, file);
 			debug('process %s/%s', index + 1, files.length);
-			return moveModule(resolve(from, file), resolve(to, file));
+			return isModule(filename)(function (is) {
+				if (is) return moveModule(filename, targetFilename);
+				debug('rename %s to %s', filename.slice(root.length), targetFilename.slice(root.length));
+				return rename(filename, targetFilename, { intermediate: true });
+			});
 		}, null);
 	})(function () {
 		return rmdir(from, { recursive: true }).catch(function (e) {
