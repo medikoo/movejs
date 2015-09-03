@@ -23,7 +23,8 @@
     "debug-ext": "git://github.com/medikoo/debug-ext.git#ba3a97132cdee9b22dd3c330eee8fcb7f3e5e5c0",
     "deferred": "git://github.com/medikoo/deferred.git#d95308484b5db2e5c61defe842e84f4ef425f0c2",
     "find-requires": "^0.2.2",
-    "fs2": "^0.2.1"
+    "fs2": "^0.2.1",
+    "path2": "^0.1"
   },
   "devDependencies": {
     "fs-extra": "^0.24",

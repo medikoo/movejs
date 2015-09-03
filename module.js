@@ -12,6 +12,7 @@ var ensureString   = require('es5-ext/object/validate-stringifiable-value')
   , writeFile      = require('fs2/write-file')
   , unlink         = require('fs2/unlink')
   , path           = require('path')
+  , relative       = require('path2/posix/relative')
   , resolveModule  = require('cjs-module/resolve')
   , resolveRoot    = require('cjs-module/resolve-package-root')
   , isPathExternal = require('cjs-module/utils/is-path-external')
@@ -19,7 +20,7 @@ var ensureString   = require('es5-ext/object/validate-stringifiable-value')
 
   , push = Array.prototype.push, stringify = JSON.stringify
   , basename = path.basename, extname = path.extname, sep = path.sep, dirname = path.dirname
-  , relative = path.relative, resolve = path.resolve
+  , resolve = path.resolve
   , findRequiresOpts = { raw: true };
 
 var readdirOpts = { depth: Infinity, type: { file: true }, stream: true,
