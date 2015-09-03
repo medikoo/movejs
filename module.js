@@ -109,12 +109,13 @@ module.exports = function (from, to) {
 						return !isPathExternal(data.value);
 					}), function (data) {
 						return resolveModule(dir, data.value)(function (path) {
+							if (!path) return; // required module doesn't exist
 							data.modulePath = path;
 							return data;
 						});
 					})(function (requires) {
 						var diff = 0, dir = dirname(to);
-						requires.forEach(function (reqData) {
+						requires.filter(Boolean).forEach(function (reqData) {
 							var nuPath = relative(dir, reqData.modulePath)
 							  , nuPathExt = extname(nuPath);
 							if (nuPath[0] !== '.') nuPath = './' + nuPath;
