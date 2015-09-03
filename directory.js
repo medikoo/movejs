@@ -3,6 +3,7 @@
 var ensureString   = require('es5-ext/object/validate-stringifiable-value')
   , startsWith     = require('es5-ext/string/#/starts-with')
   , deferred       = require('deferred')
+  , debug          = require('debug-ext')('rename-module:directory')
   , readdir        = require('fs2/readdir')
   , stat           = require('fs2/stat')
   , rmdir          = require('fs2/rmdir')
@@ -39,7 +40,9 @@ module.exports = function (from, to) {
 			throw new Error("Cannot reliably move modules out of current package");
 		}
 
-		return readdir(from, readdirOpts).reduce(function (ignore, file) {
+		debug('%s -> %s', from.slice(root.length), to.slice(root.length));
+		return readdir(from, readdirOpts).reduce(function (ignore, file, index, files) {
+			debug('process %s/%s', index + 1, files.length);
 			return moveModule(resolve(from, file), resolve(to, file));
 		}, null);
 	})(function () {

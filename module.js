@@ -5,6 +5,7 @@ var ensureString   = require('es5-ext/object/validate-stringifiable-value')
   , startsWith     = require('es5-ext/string/#/starts-with')
   , deferred       = require('deferred')
   , findRequires   = require('find-requires')
+  , debug          = require('debug-ext')('rename-module:module')
   , readdir        = require('fs2/readdir')
   , stat           = require('fs2/stat')
   , readFile       = require('fs2/read-file')
@@ -48,6 +49,8 @@ module.exports = function (from, to) {
 		}
 
 		// Find all JS modules in a package
+		debug('%s -> %s', from.slice(root.length), to.slice(root.length));
+		debug('gather local modules at %s', root);
 		dirReader = readdir(root, readdirOpts);
 		filePromises = [];
 		modulesToUpdate = [];
@@ -79,6 +82,7 @@ module.exports = function (from, to) {
 			}));
 		});
 		return dirReader(function () { return deferred.map(filePromises); })(function () {
+			debug('found %s dependents', modulesToUpdate.length);
 			if (!modulesToUpdate.length) return;
 
 			// Update affected requires in modules that require renamed module
@@ -95,6 +99,7 @@ module.exports = function (from, to) {
 						code.slice(reqData.point + diff + reqData.raw.length - 2);
 					diff += nuRaw.length - (reqData.raw.length - 2);
 				});
+				debug('rewrite %s', data.filename.slice(root.length));
 				return writeFile(data.filename, code);
 			});
 		})(function () {
@@ -130,6 +135,7 @@ module.exports = function (from, to) {
 				});
 			});
 		})(function (nuCode) {
+			debug('rewrite %s to %s', from.slice(root.length), to.slice(root.length));
 			return deferred(writeFile(to, nuCode, { mode: fileStats.mode, intermediate: true }),
 				unlink(from));
 		});
