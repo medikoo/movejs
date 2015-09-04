@@ -103,6 +103,7 @@ module.exports = function (from, to) {
 						})(function (result) {
 							result = result.filter(Boolean);
 							if (!result.length) return;
+							// Matching path(s) found, add module to rewrite queue
 							modulesToUpdate.push({ filename: filename, dirname: dir,
 								code: code, requires: result });
 						});
@@ -110,7 +111,10 @@ module.exports = function (from, to) {
 				});
 			}));
 		});
-		return dirReader(function () { return deferred.map(filePromises); })(function () {
+		return dirReader(function () {
+			// Wait until all local modules are parsed
+			return deferred.map(filePromises);
+		})(function () {
 			debug('found %s dependents', modulesToUpdate.length);
 			if (!modulesToUpdate.length) return;
 
