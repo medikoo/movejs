@@ -12,12 +12,12 @@ var ensureString   = require('es5-ext/object/validate-stringifiable-value')
   , writeFile      = require('fs2/write-file')
   , unlink         = require('fs2/unlink')
   , path           = require('path')
-  , normalize      = require('path2/posix/normalize')
   , relative       = require('path2/posix/relative')
   , resolveModule  = require('cjs-module/resolve')
   , resolveRoot    = require('cjs-module/resolve-package-root')
   , isPathExternal = require('cjs-module/utils/is-path-external')
   , isModule       = require('./lib/is-module')
+  , normalize      = require('./lib/normalize-local-path')
 
   , push = Array.prototype.push, stringify = JSON.stringify
   , basename = path.basename, extname = path.extname, sep = path.sep, dirname = path.dirname
@@ -77,15 +77,8 @@ module.exports = function (from, to) {
 							// Ignore requires to external packages
 							if (isPathExternal(data.value)) return;
 
-							modulePath = normalize(data.value);
-							if (modulePath[0] === '/') {
-								// If require to absolute path (never do that!), resolve it to local
-								modulePath = relative(filename, modulePath);
-								if (modulePath[0] !== '.') modulePath = './' + modulePath;
-							} else if (modulePath[0] !== '.') {
-								// Ensure local CJS path
-								modulePath = './' + modulePath;
-							}
+							modulePath = normalize(data.value, dir);
+
 							// Check full path match, e.g. ./foo/bar.js (for ./foo/bar.js file)
 							if (expectedPathFull === modulePath) return data;
 							// Check trimmed path match, e.g. ./foo/bar (for ./foo/bar.js file)
