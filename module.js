@@ -61,12 +61,11 @@ module.exports = function (from, to) {
 				var filename = resolve(root, path);
 				if (filename === from) return;
 				return isModule(filename)(function (is) {
-					var dir;
 					if (!is) return;
 
 					// Find if JS module contains a require to renamed module
-					dir = dirname(filename);
 					return readFile(filename)(function (code) {
+						var dir = dirname(filename);
 						code = String(code);
 						return deferred.map(findRequires(code, findRequiresOpts), function (data) {
 							if (isPathExternal(data.value)) return;
