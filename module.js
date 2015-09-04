@@ -16,7 +16,7 @@ var ensureString   = require('es5-ext/object/validate-stringifiable-value')
   , resolveModule  = require('cjs-module/resolve')
   , resolveRoot    = require('cjs-module/resolve-package-root')
   , isPathExternal = require('cjs-module/utils/is-path-external')
-  , isModule     = require('./lib/is-module')
+  , isModule       = require('./lib/is-module')
 
   , push = Array.prototype.push, stringify = JSON.stringify
   , basename = path.basename, extname = path.extname, sep = path.sep, dirname = path.dirname
