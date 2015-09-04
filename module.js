@@ -110,26 +110,6 @@ module.exports = function (from, to) {
 				debug('found %s dependents', modulesToUpdate.length);
 			});
 		})(function () {
-			if (!modulesToUpdate.length) return;
-
-			// Update affected requires in modules that require renamed module
-			return deferred.map(modulesToUpdate, function (data) {
-				var nuPath = relative(data.dirname, to)
-				  , nuPathExt = extname(nuPath)
-				  , diff = 0
-				  , code = data.code;
-				if (nuPath[0] !== '.') nuPath = './' + nuPath;
-				data.requires.forEach(function (reqData) {
-					var nuRaw = stringify((nuPathExt && !extname(reqData.value))
-						? nuPath.slice(0, -nuPathExt.length) : nuPath).slice(1, -1);
-					code = code.slice(0, reqData.point + diff) + nuRaw +
-						code.slice(reqData.point + diff + reqData.raw.length - 2);
-					diff += nuRaw.length - (reqData.raw.length - 2);
-				});
-				debug('rewrite %s', data.filename.slice(rootPrefixLength));
-				return writeFile(data.filename, code);
-			});
-		})(function () {
 			// Rename module, and update require paths within it
 			return readFile(from)(function (code) {
 				var dirFrom = dirname(from), ext = extname(from), dirTo = dirname(to);
@@ -167,11 +147,31 @@ module.exports = function (from, to) {
 						return code;
 					});
 				});
+			})(function (nuCode) {
+				debug('rewrite %s to %s', from.slice(rootPrefixLength), to.slice(rootPrefixLength));
+				return deferred(writeFile(to, nuCode, { mode: fileStats.mode, intermediate: true }),
+					unlink(from));
 			});
-		})(function (nuCode) {
-			debug('rewrite %s to %s', from.slice(rootPrefixLength), to.slice(rootPrefixLength));
-			return deferred(writeFile(to, nuCode, { mode: fileStats.mode, intermediate: true }),
-				unlink(from));
+		})(function () {
+			if (!modulesToUpdate.length) return;
+
+			// Update affected requires in modules that require renamed module
+			return deferred.map(modulesToUpdate, function (data) {
+				var nuPath = relative(data.dirname, to)
+				  , nuPathExt = extname(nuPath)
+				  , diff = 0
+				  , code = data.code;
+				if (nuPath[0] !== '.') nuPath = './' + nuPath;
+				data.requires.forEach(function (reqData) {
+					var nuRaw = stringify((nuPathExt && !extname(reqData.value))
+						? nuPath.slice(0, -nuPathExt.length) : nuPath).slice(1, -1);
+					code = code.slice(0, reqData.point + diff) + nuRaw +
+						code.slice(reqData.point + diff + reqData.raw.length - 2);
+					diff += nuRaw.length - (reqData.raw.length - 2);
+				});
+				debug('rewrite %s', data.filename.slice(rootPrefixLength));
+				return writeFile(data.filename, code);
+			});
 		});
 	});
 };
