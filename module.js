@@ -143,7 +143,7 @@ module.exports = function (from, to) {
 				code = String(code);
 				// If not .js module, no requires to parse
 				if (ext && (ext !== '.js')) return code;
-				// If module was renamed in same folder, then local paths with not change
+				// If module was renamed in same folder, then local paths will not change
 				// (corner case would be requiring self module, but we assume nobody does that)
 				if (dirFrom === dirTo) return code;
 				return isModule(from)(function (is) {
