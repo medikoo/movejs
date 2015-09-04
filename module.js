@@ -114,18 +114,18 @@ module.exports = function (source, dest) {
 		})(function () {
 			// Rename module, and update require paths within it
 			return readFile(source)(function (code) {
-				var dirFrom = dirname(source), ext = extname(source), dirTo = dirname(dest);
+				var sourceDir = dirname(source), ext = extname(source), dirTo = dirname(dest);
 				code = String(code);
 				// If not JS module, then no requires to parse
 				if (ext && (ext !== '.js')) return code;
 				// If module was renamed in same folder, then local paths will not change
 				// (corner case would be requiring self module, but we assume nobody does that)
-				if (dirFrom === dirTo) return code;
+				if (sourceDir === dirTo) return code;
 				return isModule(source)(function (is) {
 					var relPath;
 					// If not JS module, then no requires to parse
 					if (!is) return code;
-					relPath = normalize(relative(dirTo, dirFrom)) + '/';
+					relPath = normalize(relative(dirTo, sourceDir)) + '/';
 					return deferred.map(findRequires(code, findRequiresOpts).filter(function (data) {
 						// Ignore external package requires
 						return !isPathExternal(data.value);
