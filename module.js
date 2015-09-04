@@ -28,22 +28,24 @@ var readdirOpts = { depth: Infinity, type: { file: true }, stream: true,
 	dirFilter: function (path) { return (basename(path) !== 'node_modules'); },
 	ignoreRules: 'git', pattern: new RegExp(escape(sep) + '(?:[^.]+|.+\\.js)$') };
 
-module.exports = function (from, to) {
-	from = resolve(ensureString(from));
+module.exports = function (source, to) {
+	source = resolve(ensureString(source));
 	to = resolve(ensureString(to));
 
 	// Validate arguments and resolve initial data
-	return deferred(stat(from), resolveRoot(dirname(from)), stat(to).then(function () {
+	return deferred(stat(source), resolveRoot(dirname(source)), stat(to).then(function () {
 		throw new Error("Target path " + stringify(to) + " is not empty");
 	}, function (err) {
 		if (err.code === 'ENOENT') return null;
 		throw err;
 	}))(function (data) {
 		var fileStats = data[0], root = data[1], dirReader, filePromises, modulesToUpdate
-		  , fromExt = extname(from)
+		  , fromExt = extname(source)
 		  , rootPrefixLength = root.length + 1, trimmedPathStatus;
 
-		if (!fileStats.isFile()) throw new Error("Input module " + stringify(from) + " is not a file");
+		if (!fileStats.isFile()) {
+			throw new Error("Input module " + stringify(source) + " is not a file");
+		}
 		if (!root) {
 			throw new Error("Unable to resolve package root (renamed module is expected to be placed " +
 				"in scope of some package");
@@ -53,7 +55,7 @@ module.exports = function (from, to) {
 		}
 
 		// Find all JS modules in a package
-		debug('%s -> %s', from.slice(rootPrefixLength), to.slice(rootPrefixLength));
+		debug('%s -> %s', source.slice(rootPrefixLength), to.slice(rootPrefixLength));
 		debug('gather local modules at %s', root);
 		dirReader = readdir(root, readdirOpts);
 		filePromises = [];
@@ -61,13 +63,13 @@ module.exports = function (from, to) {
 		dirReader.on('change', function (event) {
 			push.apply(filePromises, event.added.map(function (path) {
 				var filename = resolve(root, path);
-				if (filename === from) return;
+				if (filename === source) return;
 				return isModule(filename)(function (is) {
 					if (!is) return;
 
 					// Find if JS module contains a require to renamed module
 					return readFile(filename)(function (code) {
-						var dir = dirname(filename), expectedPathFull = relative(dir, from)
+						var dir = dirname(filename), expectedPathFull = relative(dir, source)
 						  , expectedPathTrimmed;
 						if (expectedPathFull[0] !== '.') expectedPathFull = './' + expectedPathFull;
 						expectedPathTrimmed = expectedPathFull.slice(0, -extname(expectedPathFull).length);
@@ -91,7 +93,7 @@ module.exports = function (from, to) {
 							// This check can be done once, therefore we keep once resolved value
 							if (!trimmedPathStatus) trimmedPathStatus = resolveModule(dir, data.value);
 							return trimmedPathStatus(function (requiredFilename) {
-								if (from === requiredFilename) return data;
+								if (source === requiredFilename) return data;
 							});
 						})(function (result) {
 							result = result.filter(Boolean);
@@ -111,15 +113,15 @@ module.exports = function (from, to) {
 			});
 		})(function () {
 			// Rename module, and update require paths within it
-			return readFile(from)(function (code) {
-				var dirFrom = dirname(from), ext = extname(from), dirTo = dirname(to);
+			return readFile(source)(function (code) {
+				var dirFrom = dirname(source), ext = extname(source), dirTo = dirname(to);
 				code = String(code);
 				// If not JS module, then no requires to parse
 				if (ext && (ext !== '.js')) return code;
 				// If module was renamed in same folder, then local paths will not change
 				// (corner case would be requiring self module, but we assume nobody does that)
 				if (dirFrom === dirTo) return code;
-				return isModule(from)(function (is) {
+				return isModule(source)(function (is) {
 					var relPath;
 					// If not JS module, then no requires to parse
 					if (!is) return code;
@@ -148,9 +150,9 @@ module.exports = function (from, to) {
 					});
 				});
 			})(function (nuCode) {
-				debug('rewrite %s to %s', from.slice(rootPrefixLength), to.slice(rootPrefixLength));
+				debug('rewrite %s to %s', source.slice(rootPrefixLength), to.slice(rootPrefixLength));
 				return deferred(writeFile(to, nuCode, { mode: fileStats.mode, intermediate: true }),
-					unlink(from));
+					unlink(source));
 			});
 		})(function () {
 			if (!modulesToUpdate.length) return;
