@@ -13,12 +13,12 @@ var ensureString   = require('es5-ext/object/validate-stringifiable-value')
   , unlink         = require('fs2/unlink')
   , path           = require('path')
   , relative       = require('path2/posix/relative')
-  , resolveModule  = require('cjs-module/resolve')
   , resolveRoot    = require('cjs-module/resolve-package-root')
   , isPathExternal = require('cjs-module/utils/is-path-external')
   , isModule       = require('./lib/is-module')
   , normalize      = require('./lib/normalize-local-path')
   , toPosix        = require('./lib/to-posix')
+  , isExtRequired  = require('./lib/is-ext-required')
 
   , push = Array.prototype.push, stringify = JSON.stringify
   , basename = path.basename, extname = path.extname, sep = path.sep, dirname = path.dirname
@@ -45,7 +45,7 @@ module.exports = function (source, dest) {
 	}))(function (data) {
 		var fileStats = data[0], root = data[1], dirReader, filePromises, modulesToUpdate
 		  , sourceExt = extname(source)
-		  , rootPrefixLength = root.length + 1, trimmedPathStatus;
+		  , rootPrefixLength = root.length + 1, isSourceExtRequired;
 
 		if (!fileStats.isFile()) {
 			throw new Error("Input module " + stringify(source) + " is not a file");
@@ -102,6 +102,10 @@ module.exports = function (source, dest) {
 			debug('rewrite %s to %s', source.slice(rootPrefixLength), dest.slice(rootPrefixLength));
 			return deferred(writeFile(dest, nuCode, { mode: fileStats.mode, intermediate: true }));
 		})(function () {
+			// In new location module may not be requireable with no extension provided
+			// we need to assure that in such cases requires are not broken
+			return isExtRequired(dest, sourceExt);
+		})(function (isDestExtRequired) {
 
 			// Find all JS modules in a package
 			debug('gather local modules at %s', root);
@@ -131,18 +135,22 @@ module.exports = function (source, dest) {
 								modulePath = normalize(data.value, dir);
 
 								// Check full path match, e.g. ./foo/bar.js (for ./foo/bar.js file)
-								if (expectedPathFull === modulePath) return data;
+								if (expectedPathFull === modulePath) {
+									data.nuValue = normalize(relative(dir, destPosix));
+									return data;
+								}
 								// Check trimmed path match, e.g. ./foo/bar (for ./foo/bar.js file)
 								if (expectedPathTrimmed !== modulePath) return;
 								// Validate whether trimmed path matches
-								// If input module is .js file, then it surely will be matched (.js has priority)
-								if (sourceExt === '.js') return data;
-								// Otherwise check whether some other module is not matched over moved one
-								// e.g. if there's foo.json and foo.js, requiring './foo' will match foo.js
-								// This check can be done once, therefore we keep once resolved value
-								if (!trimmedPathStatus) trimmedPathStatus = resolveModule(dir, data.value);
-								return trimmedPathStatus(function (requiredFilename) {
-									if (source === requiredFilename) return data;
+								if (isSourceExtRequired == null) {
+									isSourceExtRequired = isExtRequired(source, sourceExt);
+								}
+								return isSourceExtRequired(function (is) {
+									if (!is) {
+										data.nuValue = normalize(relative(dir, destPosix));
+										if (!isDestExtRequired) data.nuValue = data.nuValue.slice(0, -sourceExt.length);
+										return data;
+									}
 								});
 							})(function (result) {
 								result = result.filter(Boolean);
@@ -166,13 +174,10 @@ module.exports = function (source, dest) {
 
 			// Update affected requires in modules that require renamed module
 			return deferred.map(modulesToUpdate, function (data) {
-				var nuPath = normalize(relative(data.dirname, destPosix))
-				  , nuPathExt = extname(nuPath)
-				  , diff = 0, code = data.code;
+				var diff = 0, code = data.code;
 
 				data.requires.forEach(function (reqData) {
-					var nuRaw = stringify((nuPathExt && !extname(reqData.value))
-						? nuPath.slice(0, -nuPathExt.length) : nuPath).slice(1, -1);
+					var nuRaw = stringify(reqData.nuValue).slice(1, -1);
 					code = code.slice(0, reqData.point + diff) + nuRaw +
 						code.slice(reqData.point + diff + reqData.raw.length - 2);
 					diff += nuRaw.length - (reqData.raw.length - 2);
