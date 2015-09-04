@@ -43,7 +43,7 @@ module.exports = function (source, dest) {
 		if (err.code === 'ENOENT') return null;
 		throw err;
 	}))(function (data) {
-		var fileStats = data[0], root = data[1], dirReader, filePromises, modulesToUpdate
+		var fileStats = data[0], root = data[1], dirReader, filePromises
 		  , sourceExt = extname(source)
 		  , rootPrefixLength = root.length + 1, isSourceExtRequired;
 
@@ -111,7 +111,6 @@ module.exports = function (source, dest) {
 			debug('gather local modules at %s', root);
 			dirReader = readdir(root, readdirOpts);
 			filePromises = [];
-			modulesToUpdate = [];
 			dirReader.on('change', function (event) {
 				push.apply(filePromises, event.added.map(function (path) {
 					var filename = resolve(root, path);
@@ -153,11 +152,19 @@ module.exports = function (source, dest) {
 									}
 								});
 							})(function (result) {
+								var diff;
 								result = result.filter(Boolean);
 								if (!result.length) return;
-								// Matching path(s) found, add module to rewrite queue
-								modulesToUpdate.push({ filename: filename, dirname: dir,
-									code: code, requires: result });
+
+								diff = 0;
+								result.forEach(function (reqData) {
+									var nuRaw = stringify(reqData.nuValue).slice(1, -1);
+									code = code.slice(0, reqData.point + diff) + nuRaw +
+										code.slice(reqData.point + diff + reqData.raw.length - 2);
+									diff += nuRaw.length - (reqData.raw.length - 2);
+								});
+								debug('rewrite %s', filename.slice(rootPrefixLength));
+								return writeFile(filename, code);
 							});
 						});
 					});
@@ -165,25 +172,7 @@ module.exports = function (source, dest) {
 			});
 			return dirReader(function () {
 				// Wait until all local modules are parsed
-				return deferred.map(filePromises).aside(function () {
-					debug('found %s dependents', modulesToUpdate.length);
-				});
-			});
-		})(function () {
-			if (!modulesToUpdate.length) return;
-
-			// Update affected requires in modules that require renamed module
-			return deferred.map(modulesToUpdate, function (data) {
-				var diff = 0, code = data.code;
-
-				data.requires.forEach(function (reqData) {
-					var nuRaw = stringify(reqData.nuValue).slice(1, -1);
-					code = code.slice(0, reqData.point + diff) + nuRaw +
-						code.slice(reqData.point + diff + reqData.raw.length - 2);
-					diff += nuRaw.length - (reqData.raw.length - 2);
-				});
-				debug('rewrite %s', data.filename.slice(rootPrefixLength));
-				return writeFile(data.filename, code);
+				return deferred.map(filePromises);
 			});
 		});
 	})(function () { return unlink(source); });
