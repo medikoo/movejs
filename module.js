@@ -40,7 +40,7 @@ module.exports = function (from, to) {
 		throw err;
 	}))(function (data) {
 		var fileStats = data[0], root = data[1], dirReader, filePromises, modulesToUpdate
-		  , rootPrefixLength = root.length + 1;
+		  , rootPrefixLength = root.length + 1, trimmedPathStatus;
 
 		if (!fileStats.isFile()) throw new Error("Input module " + stringify(from) + " is not a file");
 		if (!root) {
@@ -79,7 +79,8 @@ module.exports = function (from, to) {
 							else if (modulePath[0] !== '.') modulePath = './' + modulePath;
 							if (expectedPathFull === modulePath) return data;
 							if (expectedPathTrimmed !== modulePath) return;
-							return resolveModule(dir, data.value)(function (requiredFilename) {
+							if (!trimmedPathStatus) trimmedPathStatus = resolveModule(dir, data.value);
+							return trimmedPathStatus(function (requiredFilename) {
 								if (from === requiredFilename) return data;
 							});
 						})(function (result) {
