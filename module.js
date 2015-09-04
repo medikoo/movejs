@@ -18,6 +18,7 @@ var ensureString   = require('es5-ext/object/validate-stringifiable-value')
   , isPathExternal = require('cjs-module/utils/is-path-external')
   , isModule       = require('./lib/is-module')
   , normalize      = require('./lib/normalize-local-path')
+  , toPosix        = require('./lib/to-posix')
 
   , push = Array.prototype.push, stringify = JSON.stringify
   , basename = path.basename, extname = path.extname, sep = path.sep, dirname = path.dirname
@@ -29,8 +30,11 @@ var readdirOpts = { depth: Infinity, type: { file: true }, stream: true,
 	ignoreRules: 'git', pattern: new RegExp(escape(sep) + '(?:[^.]+|.+\\.js)$') };
 
 module.exports = function (source, dest) {
+	var sourcePosix, destPosix;
 	source = resolve(ensureString(source));
 	dest = resolve(ensureString(dest));
+	sourcePosix = toPosix(source);
+	destPosix = toPosix(dest);
 
 	// Validate arguments and resolve initial data
 	return deferred(stat(source), resolveRoot(dirname(source)), stat(dest).then(function () {
@@ -69,7 +73,7 @@ module.exports = function (source, dest) {
 
 					// Find if JS module contains a require to renamed module
 					return readFile(filename)(function (code) {
-						var dir = dirname(filename), expectedPathFull = relative(dir, source)
+						var dir = toPosix(dirname(filename)), expectedPathFull = relative(dir, sourcePosix)
 						  , expectedPathTrimmed;
 						if (expectedPathFull[0] !== '.') expectedPathFull = './' + expectedPathFull;
 						expectedPathTrimmed = expectedPathFull.slice(0, -extname(expectedPathFull).length);
@@ -114,7 +118,8 @@ module.exports = function (source, dest) {
 		})(function () {
 			// Rename module, and update require paths within it
 			return readFile(source)(function (code) {
-				var sourceDir = dirname(source), ext = extname(source), destDir = dirname(dest);
+				var sourceDir = toPosix(dirname(source)), ext = extname(source)
+				  , destDir = toPosix(dirname(dest));
 				code = String(code);
 				// If not JS module, then no requires to parse
 				if (ext && (ext !== '.js')) return code;
@@ -159,7 +164,7 @@ module.exports = function (source, dest) {
 
 			// Update affected requires in modules that require renamed module
 			return deferred.map(modulesToUpdate, function (data) {
-				var nuPath = relative(data.dirname, dest)
+				var nuPath = relative(data.dirname, destPosix)
 				  , nuPathExt = extname(nuPath)
 				  , diff = 0
 				  , code = data.code;
