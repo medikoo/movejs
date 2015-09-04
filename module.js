@@ -100,7 +100,7 @@ module.exports = function (source, dest) {
 			});
 		})(function (nuCode) {
 			debug('rewrite %s to %s', source.slice(rootPrefixLength), dest.slice(rootPrefixLength));
-			return deferred(writeFile(dest, nuCode, { mode: fileStats.mode, intermediate: true }));
+			return writeFile(dest, nuCode, { mode: fileStats.mode, intermediate: true });
 		})(function () {
 			// In new location module may not be requireable with no extension provided
 			// we need to assure that in such cases requires are not broken
