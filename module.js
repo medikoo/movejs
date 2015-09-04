@@ -164,11 +164,10 @@ module.exports = function (source, dest) {
 
 			// Update affected requires in modules that require renamed module
 			return deferred.map(modulesToUpdate, function (data) {
-				var nuPath = relative(data.dirname, destPosix)
+				var nuPath = normalize(relative(data.dirname, destPosix))
 				  , nuPathExt = extname(nuPath)
 				  , diff = 0
 				  , code = data.code;
-				if (nuPath[0] !== '.') nuPath = './' + nuPath;
 				data.requires.forEach(function (reqData) {
 					var nuRaw = stringify((nuPathExt && !extname(reqData.value))
 						? nuPath.slice(0, -nuPathExt.length) : nuPath).slice(1, -1);
