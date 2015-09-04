@@ -40,6 +40,7 @@ module.exports = function (from, to) {
 		throw err;
 	}))(function (data) {
 		var fileStats = data[0], root = data[1], dirReader, filePromises, modulesToUpdate
+		  , fromExt = extname(from)
 		  , rootPrefixLength = root.length + 1, trimmedPathStatus;
 
 		if (!fileStats.isFile()) throw new Error("Input module " + stringify(from) + " is not a file");
@@ -73,12 +74,28 @@ module.exports = function (from, to) {
 						code = String(code);
 						return deferred.map(findRequires(code, findRequiresOpts), function (data) {
 							var modulePath;
+							// Ignore requires to external packages
 							if (isPathExternal(data.value)) return;
+
 							modulePath = normalize(data.value);
-							if (modulePath[0] === '/') modulePath = relative(filename, modulePath);
-							else if (modulePath[0] !== '.') modulePath = './' + modulePath;
+							if (modulePath[0] === '/') {
+								// If require to absolute path (never do that!), resolve it to local
+								modulePath = relative(filename, modulePath);
+								if (modulePath[0] !== '.') modulePath = './' + modulePath;
+							} else if (modulePath[0] !== '.') {
+								// Ensure local CJS path
+								modulePath = './' + modulePath;
+							}
+							// Check full path match, e.g. ./foo/bar.js (for ./foo/bar.js file)
 							if (expectedPathFull === modulePath) return data;
+							// Check trimmed path match, e.g. ./foo/bar (for ./foo/bar.js file)
 							if (expectedPathTrimmed !== modulePath) return;
+							// Validate wether trimmed path, may match
+							// If input module is .js file, then it surely will be matched (.js has priority)
+							if (fromExt === '.js') return data;
+							// Otherwise check wether some other module is not matched over
+							// e.g. if there's foo.json and foo.js, requireing './foo' will match foo.js
+							// This check can be done once, therefore we keep once resolved value
 							if (!trimmedPathStatus) trimmedPathStatus = resolveModule(dir, data.value);
 							return trimmedPathStatus(function (requiredFilename) {
 								if (from === requiredFilename) return data;
