@@ -113,9 +113,10 @@ module.exports = function (from, to) {
 		});
 		return dirReader(function () {
 			// Wait until all local modules are parsed
-			return deferred.map(filePromises);
+			return deferred.map(filePromises).aside(function () {
+				debug('found %s dependents', modulesToUpdate.length);
+			});
 		})(function () {
-			debug('found %s dependents', modulesToUpdate.length);
 			if (!modulesToUpdate.length) return;
 
 			// Update affected requires in modules that require renamed module
