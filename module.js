@@ -140,23 +140,24 @@ module.exports = function (from, to) {
 				// (corner case would be requiring self module, but we assume nobody does that)
 				if (dirFrom === dirTo) return code;
 				return isModule(from)(function (is) {
-					// Not JS modules no requires to parse
+					var relPath;
+					// Not JS module, so no requires to parse
 					if (!is) return code;
+					relPath = normalize(relative(dirTo, dirFrom)) + '/';
 					return deferred.map(findRequires(code, findRequiresOpts).filter(function (data) {
 						// Ignore external package requires
 						return !isPathExternal(data.value);
 					}), function (data) {
-						return resolveModule(dirFrom, data.value)(function (path) {
-							if (!path) return; // required module doesn't exist
-							data.modulePath = path;
-							return data;
-						});
+						var oldPath = normalize(data.value)
+						  , nuPath = normalize(dirTo + '/' + relPath + oldPath, dirTo);
+						if (nuPath === oldPath) return;
+						data.nuPath = nuPath;
+						return data;
 					})(function (requires) {
-						var diff = 0, dir = dirname(to);
+						var diff = 0;
 						requires.filter(Boolean).forEach(function (reqData) {
-							var nuPath = relative(dir, reqData.modulePath)
+							var nuPath = reqData.nuPath
 							  , nuPathExt = extname(nuPath);
-							if (nuPath[0] !== '.') nuPath = './' + nuPath;
 							var nuRaw = stringify((nuPathExt && !extname(reqData.value))
 								? nuPath.slice(0, -nuPathExt.length) : nuPath).slice(1, -1);
 							code = code.slice(0, reqData.point + diff) + nuRaw +
