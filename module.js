@@ -139,7 +139,7 @@ module.exports = function (from, to) {
 		})(function () {
 			// Rename module, and update require paths within it
 			return readFile(from)(function (code) {
-				var dir = dirname(from), ext = extname(from);
+				var dirFrom = dirname(from), ext = extname(from);
 				code = String(code);
 				if (ext && (ext !== '.js')) return code;
 				return isModule(from)(function (is) {
@@ -148,7 +148,7 @@ module.exports = function (from, to) {
 						// Ignore external package requires
 						return !isPathExternal(data.value);
 					}), function (data) {
-						return resolveModule(dir, data.value)(function (path) {
+						return resolveModule(dirFrom, data.value)(function (path) {
 							if (!path) return; // required module doesn't exist
 							data.modulePath = path;
 							return data;
