@@ -156,8 +156,7 @@ module.exports = function (source, dest) {
 				});
 			})(function (nuCode) {
 				debug('rewrite %s to %s', source.slice(rootPrefixLength), dest.slice(rootPrefixLength));
-				return deferred(writeFile(dest, nuCode, { mode: fileStats.mode, intermediate: true }),
-					unlink(source));
+				return deferred(writeFile(dest, nuCode, { mode: fileStats.mode, intermediate: true }));
 			});
 		})(function () {
 			if (!modulesToUpdate.length) return;
@@ -179,5 +178,5 @@ module.exports = function (source, dest) {
 				return writeFile(data.filename, code);
 			});
 		});
-	});
+	})(function () { return unlink(source); });
 };
