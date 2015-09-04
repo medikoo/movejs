@@ -28,13 +28,13 @@ var readdirOpts = { depth: Infinity, type: { file: true }, stream: true,
 	dirFilter: function (path) { return (basename(path) !== 'node_modules'); },
 	ignoreRules: 'git', pattern: new RegExp(escape(sep) + '(?:[^.]+|.+\\.js)$') };
 
-module.exports = function (source, to) {
+module.exports = function (source, dest) {
 	source = resolve(ensureString(source));
-	to = resolve(ensureString(to));
+	dest = resolve(ensureString(dest));
 
 	// Validate arguments and resolve initial data
-	return deferred(stat(source), resolveRoot(dirname(source)), stat(to).then(function () {
-		throw new Error("Target path " + stringify(to) + " is not empty");
+	return deferred(stat(source), resolveRoot(dirname(source)), stat(dest).then(function () {
+		throw new Error("Target path " + stringify(dest) + " is not empty");
 	}, function (err) {
 		if (err.code === 'ENOENT') return null;
 		throw err;
@@ -50,12 +50,12 @@ module.exports = function (source, to) {
 			throw new Error("Unable to resolve package root (renamed module is expected to be placed " +
 				"in scope of some package");
 		}
-		if (!startsWith.call(to, root + sep)) {
+		if (!startsWith.call(dest, root + sep)) {
 			throw new Error("Cannot reliably move module out of current package");
 		}
 
 		// Find all JS modules in a package
-		debug('%s -> %s', source.slice(rootPrefixLength), to.slice(rootPrefixLength));
+		debug('%s -> %s', source.slice(rootPrefixLength), dest.slice(rootPrefixLength));
 		debug('gather local modules at %s', root);
 		dirReader = readdir(root, readdirOpts);
 		filePromises = [];
@@ -114,7 +114,7 @@ module.exports = function (source, to) {
 		})(function () {
 			// Rename module, and update require paths within it
 			return readFile(source)(function (code) {
-				var dirFrom = dirname(source), ext = extname(source), dirTo = dirname(to);
+				var dirFrom = dirname(source), ext = extname(source), dirTo = dirname(dest);
 				code = String(code);
 				// If not JS module, then no requires to parse
 				if (ext && (ext !== '.js')) return code;
@@ -150,8 +150,8 @@ module.exports = function (source, to) {
 					});
 				});
 			})(function (nuCode) {
-				debug('rewrite %s to %s', source.slice(rootPrefixLength), to.slice(rootPrefixLength));
-				return deferred(writeFile(to, nuCode, { mode: fileStats.mode, intermediate: true }),
+				debug('rewrite %s to %s', source.slice(rootPrefixLength), dest.slice(rootPrefixLength));
+				return deferred(writeFile(dest, nuCode, { mode: fileStats.mode, intermediate: true }),
 					unlink(source));
 			});
 		})(function () {
@@ -159,7 +159,7 @@ module.exports = function (source, to) {
 
 			// Update affected requires in modules that require renamed module
 			return deferred.map(modulesToUpdate, function (data) {
-				var nuPath = relative(data.dirname, to)
+				var nuPath = relative(data.dirname, dest)
 				  , nuPathExt = extname(nuPath)
 				  , diff = 0
 				  , code = data.code;
