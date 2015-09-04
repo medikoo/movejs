@@ -12,6 +12,7 @@ var ensureString   = require('es5-ext/object/validate-stringifiable-value')
   , writeFile      = require('fs2/write-file')
   , unlink         = require('fs2/unlink')
   , path           = require('path')
+  , normalize      = require('path2/posix/normalize')
   , relative       = require('path2/posix/relative')
   , resolveModule  = require('cjs-module/resolve')
   , resolveRoot    = require('cjs-module/resolve-package-root')
@@ -65,10 +66,19 @@ module.exports = function (from, to) {
 
 					// Find if JS module contains a require to renamed module
 					return readFile(filename)(function (code) {
-						var dir = dirname(filename);
+						var dir = dirname(filename), expectedPathFull = relative(dir, from)
+						  , expectedPathTrimmed;
+						if (expectedPathFull[0] !== '.') expectedPathFull = './' + expectedPathFull;
+						expectedPathTrimmed = expectedPathFull.slice(0, -extname(expectedPathFull).length);
 						code = String(code);
 						return deferred.map(findRequires(code, findRequiresOpts), function (data) {
+							var modulePath;
 							if (isPathExternal(data.value)) return;
+							modulePath = normalize(data.value);
+							if (modulePath[0] === '/') modulePath = relative(filename, modulePath);
+							else if (modulePath[0] !== '.') modulePath = './' + modulePath;
+							if (expectedPathFull === modulePath) return data;
+							if (expectedPathTrimmed !== modulePath) return;
 							return resolveModule(dir, data.value)(function (requiredFilename) {
 								if (from === requiredFilename) return data;
 							});
