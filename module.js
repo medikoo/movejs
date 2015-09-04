@@ -145,6 +145,7 @@ module.exports = function (from, to) {
 				return isModule(from)(function (is) {
 					if (!is) return code;
 					return deferred.map(findRequires(code, findRequiresOpts).filter(function (data) {
+						// Ignore external package requires
 						return !isPathExternal(data.value);
 					}), function (data) {
 						return resolveModule(dir, data.value)(function (path) {
