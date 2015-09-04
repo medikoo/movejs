@@ -142,8 +142,8 @@ module.exports = function (from, to) {
 				var dir = dirname(from), ext = extname(from);
 				code = String(code);
 				if (ext && (ext !== '.js')) return code;
-				return isModule(from)(function (isJs) {
-					if (!isJs) return code;
+				return isModule(from)(function (is) {
+					if (!is) return code;
 					return deferred.map(findRequires(code, findRequiresOpts).filter(function (data) {
 						return !isPathExternal(data.value);
 					}), function (data) {
