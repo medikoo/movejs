@@ -44,7 +44,7 @@ module.exports = function (source, dest) {
 		throw err;
 	}))(function (data) {
 		var fileStats = data[0], root = data[1], dirReader, filePromises, modulesToUpdate
-		  , fromExt = extname(source)
+		  , sourceExt = extname(source)
 		  , rootPrefixLength = root.length + 1, trimmedPathStatus;
 
 		if (!fileStats.isFile()) {
@@ -91,7 +91,7 @@ module.exports = function (source, dest) {
 							if (expectedPathTrimmed !== modulePath) return;
 							// Validate whether trimmed path matches
 							// If input module is .js file, then it surely will be matched (.js has priority)
-							if (fromExt === '.js') return data;
+							if (sourceExt === '.js') return data;
 							// Otherwise check whether some other module is not matched over moved one
 							// e.g. if there's foo.json and foo.js, requiring './foo' will match foo.js
 							// This check can be done once, therefore we keep once resolved value
