@@ -58,105 +58,108 @@ module.exports = function (source, dest) {
 			throw new Error("Cannot reliably move module out of current package");
 		}
 
-		// Find all JS modules in a package
 		debug('%s -> %s', source.slice(rootPrefixLength), dest.slice(rootPrefixLength));
-		debug('gather local modules at %s', root);
-		dirReader = readdir(root, readdirOpts);
-		filePromises = [];
-		modulesToUpdate = [];
-		dirReader.on('change', function (event) {
-			push.apply(filePromises, event.added.map(function (path) {
-				var filename = resolve(root, path);
-				if (filename === source) return;
-				return isModule(filename)(function (is) {
-					if (!is) return;
 
-					// Find if JS module contains a require to renamed module
-					return readFile(filename)(function (code) {
-						var dir = toPosix(dirname(filename)), expectedPathFull = relative(dir, sourcePosix)
-						  , expectedPathTrimmed;
-						if (expectedPathFull[0] !== '.') expectedPathFull = './' + expectedPathFull;
-						expectedPathTrimmed = expectedPathFull.slice(0, -extname(expectedPathFull).length);
-						code = String(code);
-						return deferred.map(findRequires(code, findRequiresOpts), function (data) {
-							var modulePath;
-							// Ignore requires to external packages
-							if (isPathExternal(data.value)) return;
-
-							modulePath = normalize(data.value, dir);
-
-							// Check full path match, e.g. ./foo/bar.js (for ./foo/bar.js file)
-							if (expectedPathFull === modulePath) return data;
-							// Check trimmed path match, e.g. ./foo/bar (for ./foo/bar.js file)
-							if (expectedPathTrimmed !== modulePath) return;
-							// Validate whether trimmed path matches
-							// If input module is .js file, then it surely will be matched (.js has priority)
-							if (sourceExt === '.js') return data;
-							// Otherwise check whether some other module is not matched over moved one
-							// e.g. if there's foo.json and foo.js, requiring './foo' will match foo.js
-							// This check can be done once, therefore we keep once resolved value
-							if (!trimmedPathStatus) trimmedPathStatus = resolveModule(dir, data.value);
-							return trimmedPathStatus(function (requiredFilename) {
-								if (source === requiredFilename) return data;
-							});
-						})(function (result) {
-							result = result.filter(Boolean);
-							if (!result.length) return;
-							// Matching path(s) found, add module to rewrite queue
-							modulesToUpdate.push({ filename: filename, dirname: dir,
-								code: code, requires: result });
-						});
-					});
-				});
-			}));
-		});
-		return dirReader(function () {
-			// Wait until all local modules are parsed
-			return deferred.map(filePromises).aside(function () {
-				debug('found %s dependents', modulesToUpdate.length);
-			});
-		})(function () {
-			// Rename module, and update require paths within it
-			return readFile(source)(function (code) {
-				var sourceDir = toPosix(dirname(source)), ext = extname(source)
-				  , destDir = toPosix(dirname(dest));
-				code = String(code);
+		// Rename module, and update require paths within it
+		return readFile(source)(function (code) {
+			var sourceDir = toPosix(dirname(source)), ext = extname(source)
+			  , destDir = toPosix(dirname(dest));
+			code = String(code);
+			// If not JS module, then no requires to parse
+			if (ext && (ext !== '.js')) return code;
+			// If module was renamed in same folder, then local paths will not change
+			// (corner case would be requiring self module, but we assume nobody does that)
+			if (sourceDir === destDir) return code;
+			return isModule(source)(function (is) {
+				var relPath;
 				// If not JS module, then no requires to parse
-				if (ext && (ext !== '.js')) return code;
-				// If module was renamed in same folder, then local paths will not change
-				// (corner case would be requiring self module, but we assume nobody does that)
-				if (sourceDir === destDir) return code;
-				return isModule(source)(function (is) {
-					var relPath;
-					// If not JS module, then no requires to parse
-					if (!is) return code;
-					relPath = normalize(relative(destDir, sourceDir)) + '/';
-					return deferred.map(findRequires(code, findRequiresOpts).filter(function (data) {
-						// Ignore external package requires
-						return !isPathExternal(data.value);
-					}), function (data) {
-						var oldPath = normalize(data.value)
-						  , nuPath = normalize(destDir + '/' + relPath + oldPath, destDir);
-						if (nuPath === oldPath) return;
-						data.nuPath = nuPath;
-						return data;
-					})(function (requires) {
-						var diff = 0;
-						requires.filter(Boolean).forEach(function (reqData) {
-							var nuPath = reqData.nuPath
-							  , nuPathExt = extname(nuPath);
-							var nuRaw = stringify((nuPathExt && !extname(reqData.value))
-								? nuPath.slice(0, -nuPathExt.length) : nuPath).slice(1, -1);
-							code = code.slice(0, reqData.point + diff) + nuRaw +
-								code.slice(reqData.point + diff + reqData.raw.length - 2);
-							diff += nuRaw.length - (reqData.raw.length - 2);
-						});
-						return code;
+				if (!is) return code;
+				relPath = normalize(relative(destDir, sourceDir)) + '/';
+				return deferred.map(findRequires(code, findRequiresOpts).filter(function (data) {
+					// Ignore external package requires
+					return !isPathExternal(data.value);
+				}), function (data) {
+					var oldPath = normalize(data.value)
+					  , nuPath = normalize(destDir + '/' + relPath + oldPath, destDir);
+					if (nuPath === oldPath) return;
+					data.nuPath = nuPath;
+					return data;
+				})(function (requires) {
+					var diff = 0;
+					requires.filter(Boolean).forEach(function (reqData) {
+						var nuPath = reqData.nuPath
+						  , nuPathExt = extname(nuPath);
+						var nuRaw = stringify((nuPathExt && !extname(reqData.value))
+							? nuPath.slice(0, -nuPathExt.length) : nuPath).slice(1, -1);
+						code = code.slice(0, reqData.point + diff) + nuRaw +
+							code.slice(reqData.point + diff + reqData.raw.length - 2);
+						diff += nuRaw.length - (reqData.raw.length - 2);
 					});
+					return code;
 				});
-			})(function (nuCode) {
-				debug('rewrite %s to %s', source.slice(rootPrefixLength), dest.slice(rootPrefixLength));
-				return deferred(writeFile(dest, nuCode, { mode: fileStats.mode, intermediate: true }));
+			});
+		})(function (nuCode) {
+			debug('rewrite %s to %s', source.slice(rootPrefixLength), dest.slice(rootPrefixLength));
+			return deferred(writeFile(dest, nuCode, { mode: fileStats.mode, intermediate: true }));
+		})(function () {
+
+			// Find all JS modules in a package
+			debug('gather local modules at %s', root);
+			dirReader = readdir(root, readdirOpts);
+			filePromises = [];
+			modulesToUpdate = [];
+			dirReader.on('change', function (event) {
+				push.apply(filePromises, event.added.map(function (path) {
+					var filename = resolve(root, path);
+					if (filename === source) return;
+					if (filename === dest) return;
+					return isModule(filename)(function (is) {
+						if (!is) return;
+
+						// Find if JS module contains a require to renamed module
+						return readFile(filename)(function (code) {
+							var dir = toPosix(dirname(filename)), expectedPathFull = relative(dir, sourcePosix)
+							  , expectedPathTrimmed;
+							if (expectedPathFull[0] !== '.') expectedPathFull = './' + expectedPathFull;
+							expectedPathTrimmed = expectedPathFull.slice(0, -extname(expectedPathFull).length);
+							code = String(code);
+							return deferred.map(findRequires(code, findRequiresOpts), function (data) {
+								var modulePath;
+								// Ignore requires to external packages
+								if (isPathExternal(data.value)) return;
+
+								modulePath = normalize(data.value, dir);
+
+								// Check full path match, e.g. ./foo/bar.js (for ./foo/bar.js file)
+								if (expectedPathFull === modulePath) return data;
+								// Check trimmed path match, e.g. ./foo/bar (for ./foo/bar.js file)
+								if (expectedPathTrimmed !== modulePath) return;
+								// Validate whether trimmed path matches
+								// If input module is .js file, then it surely will be matched (.js has priority)
+								if (sourceExt === '.js') return data;
+								// Otherwise check whether some other module is not matched over moved one
+								// e.g. if there's foo.json and foo.js, requiring './foo' will match foo.js
+								// This check can be done once, therefore we keep once resolved value
+								if (!trimmedPathStatus) trimmedPathStatus = resolveModule(dir, data.value);
+								return trimmedPathStatus(function (requiredFilename) {
+									if (source === requiredFilename) return data;
+								});
+							})(function (result) {
+								result = result.filter(Boolean);
+								if (!result.length) return;
+								// Matching path(s) found, add module to rewrite queue
+								modulesToUpdate.push({ filename: filename, dirname: dir,
+									code: code, requires: result });
+							});
+						});
+					});
+				}));
+			});
+			return dirReader(function () {
+				// Wait until all local modules are parsed
+				return deferred.map(filePromises).aside(function () {
+					debug('found %s dependents', modulesToUpdate.length);
+				});
 			});
 		})(function () {
 			if (!modulesToUpdate.length) return;
