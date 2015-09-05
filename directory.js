@@ -40,9 +40,7 @@ module.exports = function (source, dest) {
 
 	// Validate arguments and resolve initial data
 	return deferred(resolveRoot(source), stat(dest).then(function (stats) {
-		if (!stat.isDirectory()) {
-			throw new Error("Target path " + stringify(dest) + " is taken and it's not a directory");
-		}
+		throw new Error("Target path " + stringify(dest) + " already exists");
 	}, function (err) {
 		if (err.code === 'ENOENT') return null;
 		throw err;
