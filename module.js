@@ -60,120 +60,120 @@ module.exports = function (source, dest) {
 
 		debug('%s -> %s', source.slice(rootPrefixLength), dest.slice(rootPrefixLength));
 
-		// Rename module, and update require paths within it
-		return readFile(source)(function (code) {
-			var sourceDir = toPosix(dirname(source)), ext = extname(source)
-			  , destDir = toPosix(dirname(dest));
-			code = String(code);
-			// If not JS module, then no requires to parse
-			if (ext && (ext !== '.js')) return code;
-			// If module was renamed in same folder, then local paths will not change
-			// (corner case would be requiring self module, but we assume nobody does that)
-			if (sourceDir === destDir) return code;
-			return isModule(source)(function (is) {
-				var relPath;
+		return deferred(
+			// 1. Rename module, and update require paths within it
+			readFile(source)(function (code) {
+				var sourceDir = toPosix(dirname(source)), ext = extname(source)
+				  , destDir = toPosix(dirname(dest));
+				code = String(code);
 				// If not JS module, then no requires to parse
-				if (!is) return code;
-				relPath = normalize(relative(destDir, sourceDir)) + '/';
-				return deferred.map(findRequires(code, findRequiresOpts).filter(function (data) {
-					// Ignore external package requires
-					return !isPathExternal(data.value);
-				}), function (data) {
-					var oldPath = normalize(data.value)
-					  , nuPath = normalize(destDir + '/' + relPath + oldPath, destDir);
-					if (nuPath === oldPath) return;
-					data.nuPath = nuPath;
-					return data;
-				})(function (requires) {
-					var diff = 0;
-					requires.filter(Boolean).forEach(function (reqData) {
-						var nuPath = reqData.nuPath
-						  , nuPathExt = extname(nuPath);
-						var nuRaw = stringify((nuPathExt && !extname(reqData.value))
-							? nuPath.slice(0, -nuPathExt.length) : nuPath).slice(1, -1);
-						code = code.slice(0, reqData.point + diff) + nuRaw +
-							code.slice(reqData.point + diff + reqData.raw.length - 2);
-						diff += nuRaw.length - (reqData.raw.length - 2);
+				if (ext && (ext !== '.js')) return code;
+				// If module was renamed in same folder, then local paths will not change
+				// (corner case would be requiring self module, but we assume nobody does that)
+				if (sourceDir === destDir) return code;
+				return isModule(source)(function (is) {
+					var relPath;
+					// If not JS module, then no requires to parse
+					if (!is) return code;
+					relPath = normalize(relative(destDir, sourceDir)) + '/';
+					return deferred.map(findRequires(code, findRequiresOpts).filter(function (data) {
+						// Ignore external package requires
+						return !isPathExternal(data.value);
+					}), function (data) {
+						var oldPath = normalize(data.value)
+						  , nuPath = normalize(destDir + '/' + relPath + oldPath, destDir);
+						if (nuPath === oldPath) return;
+						data.nuPath = nuPath;
+						return data;
+					})(function (requires) {
+						var diff = 0;
+						requires.filter(Boolean).forEach(function (reqData) {
+							var nuPath = reqData.nuPath
+							  , nuPathExt = extname(nuPath);
+							var nuRaw = stringify((nuPathExt && !extname(reqData.value))
+								? nuPath.slice(0, -nuPathExt.length) : nuPath).slice(1, -1);
+							code = code.slice(0, reqData.point + diff) + nuRaw +
+								code.slice(reqData.point + diff + reqData.raw.length - 2);
+							diff += nuRaw.length - (reqData.raw.length - 2);
+						});
+						return code;
 					});
-					return code;
 				});
-			});
-		})(function (nuCode) {
-			debug('rewrite %s to %s', source.slice(rootPrefixLength), dest.slice(rootPrefixLength));
-			return writeFile(dest, nuCode, { mode: fileStats.mode, intermediate: true });
-		})(function () {
+			})(function (nuCode) {
+				debug('rewrite %s to %s', source.slice(rootPrefixLength), dest.slice(rootPrefixLength));
+				return writeFile(dest, nuCode, { mode: fileStats.mode, intermediate: true });
+
+			}),
+			// 2. Find all JS modules in a package and update paths of renamed file
+
 			// In new location module may not be requireable with no extension provided
 			// we need to assure that in such cases requires are not broken
-			return isExtRequired(dest, sourceExt);
-		})(function (isDestExtRequired) {
+			isExtRequired(dest, sourceExt)(function (isDestExtRequired) {
+				dirReader = readdir(root, readdirOpts);
+				filePromises = [];
+				dirReader.on('change', function (event) {
+					push.apply(filePromises, event.added.map(function (path) {
+						var filename = resolve(root, path);
+						if (filename === source) return;
+						if (filename === dest) return;
+						return isModule(filename)(function (is) {
+							if (!is) return;
 
-			// Find all JS modules in a package
-			debug('gather local modules at %s', root);
-			dirReader = readdir(root, readdirOpts);
-			filePromises = [];
-			dirReader.on('change', function (event) {
-				push.apply(filePromises, event.added.map(function (path) {
-					var filename = resolve(root, path);
-					if (filename === source) return;
-					if (filename === dest) return;
-					return isModule(filename)(function (is) {
-						if (!is) return;
+							// Find if JS module contains a require to renamed module
+							return readFile(filename)(function (code) {
+								var dir = toPosix(dirname(filename)), expectedPathFull = relative(dir, sourcePosix)
+								  , expectedPathTrimmed;
+								if (expectedPathFull[0] !== '.') expectedPathFull = './' + expectedPathFull;
+								expectedPathTrimmed = expectedPathFull.slice(0, -extname(expectedPathFull).length);
+								code = String(code);
+								return deferred.map(findRequires(code, findRequiresOpts), function (data) {
+									var modulePath;
+									// Ignore requires to external packages
+									if (isPathExternal(data.value)) return;
 
-						// Find if JS module contains a require to renamed module
-						return readFile(filename)(function (code) {
-							var dir = toPosix(dirname(filename)), expectedPathFull = relative(dir, sourcePosix)
-							  , expectedPathTrimmed;
-							if (expectedPathFull[0] !== '.') expectedPathFull = './' + expectedPathFull;
-							expectedPathTrimmed = expectedPathFull.slice(0, -extname(expectedPathFull).length);
-							code = String(code);
-							return deferred.map(findRequires(code, findRequiresOpts), function (data) {
-								var modulePath;
-								// Ignore requires to external packages
-								if (isPathExternal(data.value)) return;
+									modulePath = normalize(data.value, dir);
 
-								modulePath = normalize(data.value, dir);
-
-								// Check full path match, e.g. ./foo/bar.js (for ./foo/bar.js file)
-								if (expectedPathFull === modulePath) {
-									data.nuValue = normalize(relative(dir, destPosix));
-									return data;
-								}
-								// Check trimmed path match, e.g. ./foo/bar (for ./foo/bar.js file)
-								if (expectedPathTrimmed !== modulePath) return;
-								// Validate whether trimmed path matches
-								if (isSourceExtRequired == null) {
-									isSourceExtRequired = isExtRequired(source, sourceExt);
-								}
-								return isSourceExtRequired(function (is) {
-									if (!is) {
+									// Check full path match, e.g. ./foo/bar.js (for ./foo/bar.js file)
+									if (expectedPathFull === modulePath) {
 										data.nuValue = normalize(relative(dir, destPosix));
-										if (!isDestExtRequired) data.nuValue = data.nuValue.slice(0, -sourceExt.length);
 										return data;
 									}
-								});
-							})(function (result) {
-								var diff;
-								result = result.filter(Boolean);
-								if (!result.length) return;
+									// Check trimmed path match, e.g. ./foo/bar (for ./foo/bar.js file)
+									if (expectedPathTrimmed !== modulePath) return;
+									// Validate whether trimmed path matches
+									if (isSourceExtRequired == null) {
+										isSourceExtRequired = isExtRequired(source, sourceExt);
+									}
+									return isSourceExtRequired(function (is) {
+										if (!is) {
+											data.nuValue = normalize(relative(dir, destPosix));
+											if (!isDestExtRequired) {
+												data.nuValue = data.nuValue.slice(0, -sourceExt.length);
+											}
+											return data;
+										}
+									});
+								})(function (result) {
+									var diff;
+									result = result.filter(Boolean);
+									if (!result.length) return;
 
-								diff = 0;
-								result.forEach(function (reqData) {
-									var nuRaw = stringify(reqData.nuValue).slice(1, -1);
-									code = code.slice(0, reqData.point + diff) + nuRaw +
-										code.slice(reqData.point + diff + reqData.raw.length - 2);
-									diff += nuRaw.length - (reqData.raw.length - 2);
+									diff = 0;
+									result.forEach(function (reqData) {
+										var nuRaw = stringify(reqData.nuValue).slice(1, -1);
+										code = code.slice(0, reqData.point + diff) + nuRaw +
+											code.slice(reqData.point + diff + reqData.raw.length - 2);
+										diff += nuRaw.length - (reqData.raw.length - 2);
+									});
+									debug('rewrite %s', filename.slice(rootPrefixLength));
+									return writeFile(filename, code);
 								});
-								debug('rewrite %s', filename.slice(rootPrefixLength));
-								return writeFile(filename, code);
 							});
 						});
-					});
-				}));
-			});
-			return dirReader(function () {
-				// Wait until all local modules are parsed
-				return deferred.map(filePromises);
-			});
-		});
+					}));
+				});
+				return dirReader(function () { return deferred.map(filePromises); });
+			})
+		);
 	})(function () { return unlink(source); });
 };
