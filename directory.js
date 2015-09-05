@@ -16,7 +16,6 @@ var copy           = require('es5-ext/object/copy')
   , path           = require('path')
   , resolvePosix   = require('path2/posix/resolve')
   , resolveRoot    = require('cjs-module/resolve-package-root')
-  , resolveModule  = require('cjs-module/resolve')
   , isPathExternal = require('cjs-module/utils/is-path-external')
   , isModule       = require('./lib/is-module')
   , normalize      = require('./lib/normalize-local-path')
@@ -59,7 +58,6 @@ module.exports = function (source, dest) {
 		}
 
 		debug('%s -> %s', source.slice(rootPrefixLength), dest.slice(rootPrefixLength));
-		debug('... rename modules ...');
 		dirReader = readdir(source, readdirOpts);
 		dirReader.on('change', function (event) {
 			push.apply(filePromises, event.added.map(function (file) {
@@ -124,8 +122,6 @@ module.exports = function (source, dest) {
 							return code;
 						});
 					})(function (nuCode) {
-						debug('%s -> %s', sourceFilename.slice(rootPrefixLength),
-							destFilename.slice(rootPrefixLength));
 						return stat(sourceFilename)(function (stats) {
 							return deferred(writeFile(destFilename, nuCode,
 								{ mode: stats.mode, intermediate: true }), unlink(sourceFilename));
@@ -134,73 +130,71 @@ module.exports = function (source, dest) {
 				});
 			}));
 		});
-		return dirReader(function () { return deferred.map(filePromises); })(function () {
-			return deferred(isDirShadowed(source), isDirShadowed(dest));
-		}).spread(function (isSourceShadowed, isDestShadowed) {
-			var customReaddirOpts = copy(readdirOpts), filePromises = [];
-			customReaddirOpts.dirFilter = function (path) {
-				if (path === source) return false;
-				if (path === dest) return false;
-				return readdirOpts.dirFilter(path);
-			};
-			customReaddirOpts.pattern = jsModulesPattern;
+		return deferred(
+			dirReader(function () { return deferred.map(filePromises); }),
+			deferred(isDirShadowed(source), isDirShadowed(dest))(function (data) {
+				var customReaddirOpts = copy(readdirOpts), filePromises = []
+				  , isSourceShadowed = data[0], isDestShadowed = data[1];
+				customReaddirOpts.dirFilter = function (path) {
+					if (path === source) return false;
+					if (path === dest) return false;
+					return readdirOpts.dirFilter(path);
+				};
+				customReaddirOpts.pattern = jsModulesPattern;
 
-			// Find outer modules that require moved modules
-			debug('... rewrite requires to moved modules ...');
-			dirReader = readdir(root, customReaddirOpts);
-			dirReader.on('change', function (event) {
-				push.apply(filePromises, event.added.map(function (file) {
-					var filename = resolve(root, file);
-					return isModule(filename)(function (is) {
-						if (!is) return;
-						// Find if JS module contains a require to renamed module
-						return readFile(filename)(function (code) {
-							var dir = toPosix(dirname(filename));
-							code = String(code);
-							return deferred.map(findRequires(code, findRequiresOpts), function (data) {
-								var modulePath, moduleFullPath;
-								// Ignore requires to external packages
-								if (isPathExternal(data.value)) return;
+				// Find outer modules that require moved modules
+				dirReader = readdir(root, customReaddirOpts);
+				dirReader.on('change', function (event) {
+					push.apply(filePromises, event.added.map(function (file) {
+						var filename = resolve(root, file);
+						return isModule(filename)(function (is) {
+							if (!is) return;
+							// Find if JS module contains a require to renamed module
+							return readFile(filename)(function (code) {
+								var dir = toPosix(dirname(filename));
+								code = String(code);
+								return deferred.map(findRequires(code, findRequiresOpts), function (data) {
+									var modulePath, moduleFullPath;
+									// Ignore requires to external packages
+									if (isPathExternal(data.value)) return;
 
-								modulePath = normalize(data.value, dir);
-								moduleFullPath = resolvePosix(dir, modulePath);
+									modulePath = normalize(data.value, dir);
+									moduleFullPath = resolvePosix(dir, modulePath);
 
-								if (sourcePosix === moduleFullPath) {
-									if (isSourceShadowed) return;
-									// Require of moved directory
-									data.nuValue = normalize(destPosix, dir);
-									if (isDestShadowed) data.nuValue += '/';
+									if (sourcePosix === moduleFullPath) {
+										if (isSourceShadowed) return;
+										// Require of moved directory
+										data.nuValue = normalize(destPosix, dir);
+										if (isDestShadowed) data.nuValue += '/';
+										return data;
+									}
+									// Ignore requires not directing to moved directory
+									if (!startsWith.call(moduleFullPath, sourcePosix + '/')) return;
+
+									data.nuValue = normalize(destPosix + '/' +
+										moduleFullPath.slice(sourcePosix.length + 1), dir);
 									return data;
-								}
-								// Ignore requires not directing to moved directory
-								if (!startsWith.call(moduleFullPath, sourcePosix + '/')) return;
+								})(function (result) {
+									var diff;
+									result = result.filter(Boolean);
+									if (!result.length) return;
 
-								data.nuValue = normalize(destPosix + '/' +
-									moduleFullPath.slice(sourcePosix.length + 1), dir);
-								return data;
-							})(function (result) {
-								var diff;
-								result = result.filter(Boolean);
-								if (!result.length) return;
-
-								diff = 0;
-								result.forEach(function (reqData) {
-									var nuRaw = stringify(reqData.nuValue).slice(1, -1);
-									code = code.slice(0, reqData.point + diff) + nuRaw +
-										code.slice(reqData.point + diff + reqData.raw.length - 2);
-									diff += nuRaw.length - (reqData.raw.length - 2);
+									diff = 0;
+									result.forEach(function (reqData) {
+										var nuRaw = stringify(reqData.nuValue).slice(1, -1);
+										code = code.slice(0, reqData.point + diff) + nuRaw +
+											code.slice(reqData.point + diff + reqData.raw.length - 2);
+										diff += nuRaw.length - (reqData.raw.length - 2);
+									});
+									debug('rewrite %s', filename.slice(rootPrefixLength));
+									return writeFile(filename, code);
 								});
-								debug('rewrite %s', filename.slice(rootPrefixLength));
-								return writeFile(filename, code);
 							});
 						});
-					});
-				}));
-			});
-			return dirReader(function () {
-				// Wait until all local modules are parsed
-				return deferred.map(filePromises);
-			});
-		});
+					}));
+				});
+				return dirReader(function () { return deferred.map(filePromises); });
+			})
+		);
 	})(function () { return rmdir(source); });
 };
