@@ -134,10 +134,7 @@ module.exports = function (source, dest) {
 				});
 			}));
 		});
-		return dirReader(function () {
-			// Wait until all modules are moved
-			return deferred.map(filePromises);
-		})(function () {
+		return dirReader(function () { return deferred.map(filePromises); })(function () {
 			return deferred(isDirShadowed(source), isDirShadowed(dest));
 		}).spread(function (isSourceShadowed, isDestShadowed) {
 			var customReaddirOpts = copy(readdirOpts), filePromises = [];
