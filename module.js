@@ -58,8 +58,6 @@ module.exports = function (source, dest) {
 			throw new Error("Cannot reliably move module out of current package");
 		}
 
-		debug('%s -> %s', source.slice(rootPrefixLength), dest.slice(rootPrefixLength));
-
 		return deferred(
 			// 1. Rename module, and update require paths within it
 			readFile(source)(function (code) {
@@ -100,7 +98,7 @@ module.exports = function (source, dest) {
 					});
 				});
 			})(function (nuCode) {
-				debug('rewrite %s to %s', source.slice(rootPrefixLength), dest.slice(rootPrefixLength));
+				debug('%s -> %s', source.slice(rootPrefixLength), dest.slice(rootPrefixLength));
 				return writeFile(dest, nuCode, { mode: fileStats.mode, intermediate: true });
 
 			}),
