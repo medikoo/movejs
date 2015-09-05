@@ -16,11 +16,13 @@ var copy           = require('es5-ext/object/copy')
   , path           = require('path')
   , resolvePosix   = require('path2/posix/resolve')
   , resolveRoot    = require('cjs-module/resolve-package-root')
+  , resolveModule  = require('cjs-module/resolve')
   , isPathExternal = require('cjs-module/utils/is-path-external')
   , isModule       = require('./lib/is-module')
   , normalize      = require('./lib/normalize-local-path')
   , rmdir          = require('./lib/rmdir')
   , toPosix        = require('./lib/to-posix')
+  , isDirShadowed  = require('./lib/is-dir-shadowed')
 
   , push = Array.prototype.push, create = Object.create, stringify = JSON.stringify
   , sep = path.sep, basename = path.basename, dirname = path.dirname, extname = path.extname
@@ -136,6 +138,8 @@ module.exports = function (source, dest) {
 			// Wait until all modules are moved
 			return deferred.map(filePromises);
 		})(function () {
+			return deferred(isDirShadowed(source), isDirShadowed(dest));
+		}).spread(function (isSourceShadowed, isDestShadowed) {
 			var customReaddirOpts = copy(readdirOpts), filePromises = [];
 			customReaddirOpts.dirFilter = function (path) {
 				if (path === source) return false;
@@ -164,6 +168,13 @@ module.exports = function (source, dest) {
 								modulePath = normalize(data.value, dir);
 								moduleFullPath = resolvePosix(dir, modulePath);
 
+								if (sourcePosix === moduleFullPath) {
+									if (isSourceShadowed) return;
+									// Require of moved directory
+									data.nuValue = normalize(destPosix, dir);
+									if (isDestShadowed) data.nuValue += '/';
+									return data;
+								}
 								// Ignore requires not directing to moved directory
 								if (!startsWith.call(moduleFullPath, sourcePosix + '/')) return;
 

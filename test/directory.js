@@ -22,7 +22,8 @@ module.exports = function (t, a, d, workingPath) {
 				}),
 				readFile(resolve(workingPath, 'foo.js'))(function (code) {
 					a(String(code), 'require(\'./outer/deep/twodepth/bar\');\n' +
-						'require(\'./outer/deep/twodepth/marko\');\nrequire(\'./outer/deep/twodepth/bar\');\n',
+						'require(\'./outer/deep/twodepth/marko\');\n' +
+						'require(\'./outer/deep/twodepth/bar\');\nrequire(\'./outer/deep/\');\n',
 						"Root module");
 				}),
 				readFile(resolve(workingPath, 'outer/deep/twodepth/marko.js'))(function (code) {
