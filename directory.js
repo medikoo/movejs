@@ -59,13 +59,14 @@ module.exports = function (source, dest) {
 		}
 
 		debug('%s -> %s', source.slice(rootPrefixLength), dest.slice(rootPrefixLength));
+		debug('... rename modules ...');
 		dirReader = readdir(source, readdirOpts);
 		dirReader.on('change', function (event) {
 			push.apply(filePromises, event.added.map(function (file) {
 				var sourceFilename = resolve(source, file), destFilename = resolve(dest, file);
 				return isModule(sourceFilename)(function (is) {
 					var ext;
-					debug('rename %s to %s', sourceFilename.slice(rootPrefixLength),
+					debug('%s -> %s', sourceFilename.slice(rootPrefixLength),
 						destFilename.slice(rootPrefixLength));
 
 					// If not a module, just rename file and exit
@@ -123,7 +124,7 @@ module.exports = function (source, dest) {
 							return code;
 						});
 					})(function (nuCode) {
-						debug('rewrite %s to %s', sourceFilename.slice(rootPrefixLength),
+						debug('%s -> %s', sourceFilename.slice(rootPrefixLength),
 							destFilename.slice(rootPrefixLength));
 						return stat(sourceFilename)(function (stats) {
 							return deferred(writeFile(destFilename, nuCode,
@@ -146,6 +147,7 @@ module.exports = function (source, dest) {
 			customReaddirOpts.pattern = jsModulesPattern;
 
 			// Find outer modules that require moved modules
+			debug('... rewrite requires to moved modules ...');
 			dirReader = readdir(root, customReaddirOpts);
 			dirReader.on('change', function (event) {
 				push.apply(filePromises, event.added.map(function (file) {
