@@ -14,4 +14,7 @@ if (args.length !== 2) {
 	process.exit(1);
 }
 
-require('../')(args[0], args[1]).done();
+require('../')(args[0], args[1]).done(null, function (err) {
+	if (err.code !== 'CANNOT_CLEAR_DIR') throw err;
+	console.error(err.message);
+});
