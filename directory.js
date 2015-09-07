@@ -57,7 +57,6 @@ module.exports = function (source, dest) {
 			throw new Error("Cannot reliably move modules out of current package");
 		}
 
-		debug('%s -> %s', source.slice(rootPrefixLength), dest.slice(rootPrefixLength));
 		dirReader = readdir(source, readdirOpts);
 		dirReader.on('change', function (event) {
 			push.apply(filePromises, event.added.map(function (file) {
