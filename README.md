@@ -1,4 +1,4 @@
-# rename-module
+# movejs
 ## Rename/Move CJS module(s) and update all affected requires
 
 Rename/Move module or directory of modules within given package to different location.
@@ -18,56 +18,56 @@ _otherwise root of a system is perceived as root of a package,
 
 ### Installation
 
-	$ npm install -g rename-module
+	$ npm install -g movejs
 
 ### Usage
 
-	$ rename-module sourcePath destPath
+	$ movejs sourcePath destPath
 
 `sourcePath` can be either module file path or directory path. `destPath` must not be taken.
 
-Verbose logging of taken operations is possible with additional setting of `DEBUG` variable:
+Verbose logging of underlying operations is possible with additional setting of `DEBUG` variable:
 
-	$ DEBUG=rename-module rename-module sourcePath destPath
+	$ DEBUG=movejs movejs sourcePath destPath
 
 ### Programatical API
 
-#### rename-module
+#### movejs
 
 Move/rename single module file or directory of modules
 
 ```javascript
-var mv = require('rename-module');
+var mv = require('movejs');
 
 mv(sourcePath, destPath).done(function () {
 	// Module(s) successfully moved
 });
 ```
 
-#### rename-module/module
+#### movejs/module
 
 Move/rename single module file
 
 ```javascript
-var mvModule = require('rename-module/module');
+var mvModule = require('movejs/module');
 
 mvModule(sourcePath, destPath).done(function () {
 	// Module successfully moved
 });
 ```
 
-#### rename-module/directory
+#### movejs/directory
 
 Move/rename directory of modules
 
 ```javascript
-var mvDir = require('rename-module/directory');
+var mvDir = require('movejs/directory');
 
 mvDir(sourcePath, destPath).done(function () {
 	// Modules successfully moved
 });
 ```
 
-## Tests [![Build Status](https://travis-ci.org/medikoo/rename-module.svg)](https://travis-ci.org/medikoo/rename-module)
+## Tests [![Build Status](https://travis-ci.org/medikoo/movejs.svg)](https://travis-ci.org/medikoo/movejs)
 
 	$ npm test
