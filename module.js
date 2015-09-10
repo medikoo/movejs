@@ -1,3 +1,5 @@
+// Moves module to other location
+
 'use strict';
 
 var ensureString   = require('es5-ext/object/validate-stringifiable-value')

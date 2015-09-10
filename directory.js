@@ -1,3 +1,5 @@
+// Moves directory of modules to other location
+
 'use strict';
 
 var copy           = require('es5-ext/object/copy')
