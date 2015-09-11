@@ -6,13 +6,13 @@ All requires within moved module(s) and within files that require moved module(s
 will be accordingly updated.
 
 - Package root is intelligently detected
-- Content of eventual _node\_modules_ (external dependencies) folder is not touched
+- Content of eventual _node\_modules_ (external dependencies) folder is not affected
 - All files as ignored by _.gitignore_ rules are not touched (it is assumed they're most likely generated files, which will automatically fixed by regeneration).
 
 Constraints:
 - Moved module must reside in some package  
-_otherwise root of a system is perceived as root of a package,
-	and operation is aborted to not proceed with whole system files search (of affected modules)_
+_otherwise root of a system is perceived as a root of a package,
+	and operation is aborted (to not proceed with whole system files search for affected modules)_
 - Modules can be moved only within a scope of same package.
   For obvious reasons move across different packages will fail
 
