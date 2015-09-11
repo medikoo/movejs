@@ -1,13 +1,9 @@
 # movejs
 ## Rename/Move CJS module(s) and update all affected requires
 
-Rename/Move module or directory of modules within given package to different location.
-All requires within moved module(s) and within files that require moved module(s)
-will be accordingly updated.
-
 - Package root is intelligently detected
 - Content of eventual _node\_modules_ (external dependencies) folder is not affected
-- All files as ignored by _.gitignore_ rules are not touched (it is assumed they're most likely generated files, which will automatically fixed by regeneration).
+- All files as ignored by _.gitignore_ rules are not touched (it is assumed they're most likely generated files, which will automatically be fixed by regeneration).
 
 Constraints:
 - Moved module must reside in some package  
