@@ -13,7 +13,7 @@ var copy           = require('es5-ext/object/copy')
   , readdir        = require('fs2/readdir')
   , readFile       = require('fs2/read-file')
   , writeFile      = require('fs2/write-file')
-  , stat           = require('fs2/stat')
+  , lstat          = require('fs2/lstat')
   , unlink         = require('fs2/unlink')
   , path           = require('path')
   , resolvePosix   = require('path2/posix/resolve')
@@ -42,7 +42,7 @@ module.exports = function (source, dest) {
 	destPosix = toPosix(dest);
 
 	// Validate arguments and resolve initial data
-	return deferred(resolveRoot(source), stat(dest).then(function (stats) {
+	return deferred(resolveRoot(source), lstat(dest).then(function (stats) {
 		throw new Error("Target path " + stringify(dest) + " already exists");
 	}, function (err) {
 		if (err.code === 'ENOENT') return null;
@@ -123,7 +123,7 @@ module.exports = function (source, dest) {
 							return code;
 						});
 					})(function (nuCode) {
-						return stat(sourceFilename)(function (stats) {
+						return lstat(sourceFilename)(function (stats) {
 							return deferred(writeFile(destFilename, nuCode,
 								{ mode: stats.mode, intermediate: true }), unlink(sourceFilename));
 						});

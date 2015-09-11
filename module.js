@@ -9,7 +9,7 @@ var ensureString   = require('es5-ext/object/validate-stringifiable-value')
   , findRequires   = require('find-requires')
   , debug          = require('debug-ext')('rename-module')
   , readdir        = require('fs2/readdir')
-  , stat           = require('fs2/stat')
+  , lstat          = require('fs2/lstat')
   , readFile       = require('fs2/read-file')
   , writeFile      = require('fs2/write-file')
   , unlink         = require('fs2/unlink')
@@ -39,7 +39,7 @@ module.exports = function (source, dest) {
 	destPosix = toPosix(dest);
 
 	// Validate arguments and resolve initial data
-	return deferred(stat(source), resolveRoot(dirname(source)), stat(dest).then(function () {
+	return deferred(lstat(source), resolveRoot(dirname(source)), lstat(dest).then(function () {
 		throw new Error("Target path " + stringify(dest) + " is not empty");
 	}, function (err) {
 		if (err.code === 'ENOENT') return null;
