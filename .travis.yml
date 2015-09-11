@@ -6,6 +6,6 @@ node_js:
 
 notifications:
   email:
-    - medikoo+rename-module@medikoo.com
+    - medikoo+movejs@medikoo.com
 
 script: "npm test && npm run lint"
