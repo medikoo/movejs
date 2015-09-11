@@ -1,6 +1,6 @@
 {
-  "name": "rename-module",
-  "version": "0.0.0",
+  "name": "movejs",
+  "version": "1.0.0",
   "description": "Rename/Move CJS module(s) and update all affected requires",
   "author": "Mariusz Nowak <medyk@medikoo.com> (http://www.medikoo.com/)",
   "keywords": [
@@ -8,14 +8,15 @@
     "move",
     "rename",
     "module",
-    "refactor"
+    "refactor",
+    "mv"
   ],
   "bin": {
-    "rename-module": "./bin/rename-module"
+    "movejs": "./bin/movejs"
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/medikoo/rename-module.git"
+    "url": "git://github.com/medikoo/movejs.git"
   },
   "dependencies": {
     "es5-ext": "^0.10.7",
