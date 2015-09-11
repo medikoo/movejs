@@ -1,2 +1,5 @@
+v1.0.1  --  2015.09.11
+* Rely on `lstat` instead of `stat`
+
 v1.0.0  --  2015.09.11
 Initial
