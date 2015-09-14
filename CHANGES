@@ -1,3 +1,6 @@
+v1.0.4  --  2015.09.14
+* Improve error handling
+
 v1.0.3  --  2015.09.14
 * Ensure that eventual dynamic require paths are ignored
 

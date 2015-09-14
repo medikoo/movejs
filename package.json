@@ -1,6 +1,6 @@
 {
   "name": "movejs",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Rename/Move CJS module(s) and update all affected requires",
   "author": "Mariusz Nowak <medyk@medikoo.com> (http://www.medikoo.com/)",
   "keywords": [
@@ -24,7 +24,7 @@
     "debug-ext": "1",
     "deferred": "^0.7.3",
     "find-requires": "^0.2.2",
-    "fs2": "^0.2.2",
+    "fs2": "^0.2.3",
     "path2": "^0.1"
   },
   "devDependencies": {
