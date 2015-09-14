@@ -1,3 +1,6 @@
+v1.0.3  --  2015.09.14
+* Ensure that eventual dynamic require paths are ignored
+
 v1.0.2  --  2015.09.11
 * In main module also rely on `lstat` instead of `stat`
 * Improve documentation
