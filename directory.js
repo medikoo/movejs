@@ -45,7 +45,7 @@ module.exports = function (source, dest) {
 	return deferred(resolveRoot(source), lstat(dest).then(function (stats) {
 		throw new Error("Target path " + stringify(dest) + " already exists");
 	}, function (err) {
-		if (err.code === 'ENOENT') return null;
+		if (err && (err.code === 'ENOENT')) return null;
 		throw err;
 	}))(function (data) {
 		var root = data[0], rootPrefixLength = root.length + 1

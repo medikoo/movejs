@@ -42,7 +42,7 @@ module.exports = function (source, dest) {
 	return deferred(lstat(source), resolveRoot(dirname(source)), lstat(dest).then(function () {
 		throw new Error("Target path " + stringify(dest) + " is not empty");
 	}, function (err) {
-		if (err.code === 'ENOENT') return null;
+		if (err && (err.code === 'ENOENT')) return null;
 		throw err;
 	}))(function (data) {
 		var fileStats = data[0], root = data[1], dirReader, filePromises
