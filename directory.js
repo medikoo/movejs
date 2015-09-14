@@ -93,8 +93,8 @@ module.exports = function (source, dest) {
 
 						code = String(code);
 						return deferred.map(findRequires(code, findRequiresOpts).filter(function (data) {
-							// Ignore external package requires
-							return !isPathExternal(data.value);
+							// Ignore dynamic & external package requires
+							return ((data.value != null) && !isPathExternal(data.value));
 						}), function (data) {
 							var oldFullPath = resolvePosix(sourceFilenameDir, data.value)
 							  , oldPath, nuPath;
@@ -156,8 +156,8 @@ module.exports = function (source, dest) {
 								code = String(code);
 								return deferred.map(findRequires(code, findRequiresOpts), function (data) {
 									var modulePath, moduleFullPath;
-									// Ignore requires to external packages
-									if (isPathExternal(data.value)) return;
+									// Ignore dynamic & external packages requires
+									if ((data.value == null) || isPathExternal(data.value)) return;
 
 									modulePath = normalize(data.value, dir);
 									moduleFullPath = resolvePosix(dir, modulePath);

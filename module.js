@@ -77,8 +77,8 @@ module.exports = function (source, dest) {
 					if (!is) return code;
 					relPath = normalize(relative(destDir, sourceDir)) + '/';
 					return deferred.map(findRequires(code, findRequiresOpts).filter(function (data) {
-						// Ignore external package requires
-						return !isPathExternal(data.value);
+						// Ignore dynamic & external package requires
+						return ((data.value != null) && !isPathExternal(data.value));
 					}), function (data) {
 						var oldPath = normalize(data.value)
 						  , nuPath = normalize(destDir + '/' + relPath + oldPath, destDir);
@@ -128,8 +128,8 @@ module.exports = function (source, dest) {
 								code = String(code);
 								return deferred.map(findRequires(code, findRequiresOpts), function (data) {
 									var modulePath;
-									// Ignore requires to external packages
-									if (isPathExternal(data.value)) return;
+									// Ignore dynamic & external package requires
+									if ((data.value == null) || isPathExternal(data.value)) return;
 
 									modulePath = normalize(data.value, dir);
 
