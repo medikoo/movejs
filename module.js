@@ -47,7 +47,7 @@ module.exports = function (source, dest) {
 	}))(function (data) {
 		var fileStats = data[0], root = data[1], dirReader, filePromises
 		  , sourceExt = extname(source)
-		  , rootPrefixLength = root.length + 1, isSourceExtRequired;
+		  , rootPrefixLength = root.length + 1, isSourceExtRequired, isDestExtRequired;
 
 		if (!fileStats.isFile()) {
 			throw new Error("Input module " + stringify(source) + " is not a file");
@@ -108,7 +108,9 @@ module.exports = function (source, dest) {
 
 			// In new location module may not be requireable with no extension provided
 			// we need to assure that in such cases requires are not broken
-			isExtRequired(dest, sourceExt)(function (isDestExtRequired) {
+			deferred(
+				isExtRequired(dest, sourceExt)(function (result) { isDestExtRequired = result; })
+			)(function () {
 				dirReader = readdir(root, readdirOpts);
 				filePromises = [];
 				dirReader.on('change', function (event) {
