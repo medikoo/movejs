@@ -1,6 +1,6 @@
 {
   "name": "movejs",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Rename/Move CJS module(s) and update all affected requires",
   "author": "Mariusz Nowak <medyk@medikoo.com> (http://www.medikoo.com/)",
   "keywords": [
@@ -19,17 +19,17 @@
     "url": "git://github.com/medikoo/movejs.git"
   },
   "dependencies": {
-    "es5-ext": "^0.10.7",
+    "es5-ext": "^0.10.11",
     "cjs-module": "^1.1",
     "debug-ext": "1",
-    "deferred": "^0.7.3",
+    "deferred": "^0.7.5",
     "find-requires": "^0.2.2",
     "fs2": "^0.2.3",
     "path2": "^0.1"
   },
   "devDependencies": {
-    "fs-extra": "^0.24",
-    "tad": "^0.2.3",
+    "fs-extra": "^0.26.5",
+    "tad": "^0.2.4",
     "xlint": "^0.2.2",
     "xlint-jslint-medikoo": "^0.1.4"
   },
