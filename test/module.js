@@ -34,6 +34,13 @@ module.exports = function (t, a, d, workingPath) {
 					a(e.code, 'ENOENT', "Original deleted");
 				})
 			);
+		})(function () {
+			var from = resolve(workingPath, 'test-module-dir/index.js');
+			return t(from, resolve(workingPath, 'moved-module-dir.js'))(function () {
+				return readFile(resolve(workingPath, 'test-module.js'))(function (code) {
+					a(String(code), 'require(\'./moved-module-dir\');\n', "Moved module dir");
+				});
+			});
 		});
 	})(function () {
 		return rmdir(workingPath, { recursive: true, force: true });
