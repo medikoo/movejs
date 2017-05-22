@@ -89,10 +89,16 @@ module.exports = function (source, dest) {
 					// Assure correct requires in moved files
 					return readFile(sourceFilename)(function (code) {
 						var sourceFilenameDir = toPosix(dirname(sourceFilename))
-						  , destFilenameDir = toPosix(dirname(destFilename));
+						  , destFilenameDir = toPosix(dirname(destFilename)), deps;
 
 						code = String(code);
-						return deferred.map(findRequires(code, findRequiresOpts).filter(function (data) {
+						try {
+							deps = findRequires(code, findRequiresOpts);
+						} catch (e) {
+							debug('error %s: %s', sourceFilename.slice(rootPrefixLength), e.message);
+							deps = [];
+						}
+						return deferred.map(deps.filter(function (data) {
 							// Ignore dynamic & external package requires
 							return ((data.value != null) && !isPathExternal(data.value));
 						}), function (data) {
@@ -152,9 +158,15 @@ module.exports = function (source, dest) {
 							if (!is) return;
 							// Find if JS module contains a require to renamed module
 							return readFile(filename)(function (code) {
-								var dir = toPosix(dirname(filename));
+								var dir = toPosix(dirname(filename)), deps;
 								code = String(code);
-								return deferred.map(findRequires(code, findRequiresOpts), function (data) {
+								try {
+									deps = findRequires(code, findRequiresOpts);
+								} catch (e) {
+									debug('error %s: %s', filename.slice(rootPrefixLength), e.message);
+									deps = [];
+								}
+								return deferred.map(deps, function (data) {
 									var modulePath, moduleFullPath;
 									// Ignore dynamic & external packages requires
 									if ((data.value == null) || isPathExternal(data.value)) return;

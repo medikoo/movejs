@@ -78,11 +78,17 @@ module.exports = function (source, dest) {
 					// (corner case would be requiring self module, but we assume nobody does that)
 					if (sourceDirPosix === destDir) return code;
 					return isModule(source)(function (is) {
-						var relPath;
+						var relPath, deps;
 						// If not JS module, then no requires to parse
 						if (!is) return code;
 						relPath = normalize(relative(destDir, sourceDirPosix)) + '/';
-						return deferred.map(findRequires(code, findRequiresOpts).filter(function (data) {
+						try {
+							deps = findRequires(code, findRequiresOpts);
+						} catch (e) {
+							debug('error %s: %s', source.slice(rootPrefixLength), e.message);
+							deps = [];
+						}
+						return deferred.map(deps.filter(function (data) {
 							// Ignore dynamic & external package requires
 							return ((data.value != null) && !isPathExternal(data.value));
 						}), function (data) {
@@ -134,14 +140,20 @@ module.exports = function (source, dest) {
 								return readFile(filename)(function (code) {
 									var dir = toPosix(dirname(filename))
 									  , expectedPathFull = relative(dir, sourcePosix)
-									  , expectedPathTrimmed, expectedDir;
+									  , expectedPathTrimmed, expectedDir, deps;
 
 									if (expectedPathFull[0] !== '.') expectedPathFull = './' + expectedPathFull;
 									expectedPathTrimmed =
 										expectedPathFull.slice(0, -extname(expectedPathFull).length);
 									if (isSourceDirIndex) expectedDir = posixDirname(expectedPathTrimmed);
 									code = String(code);
-									return deferred.map(findRequires(code, findRequiresOpts), function (data) {
+									try {
+										deps = findRequires(code, findRequiresOpts);
+									} catch (e) {
+										debug('error %s: %s', filename.slice(rootPrefixLength), e.message);
+										deps = [];
+									}
+									return deferred.map(deps, function (data) {
 										var modulePath;
 										// Ignore dynamic & external package requires
 										if ((data.value == null) || isPathExternal(data.value)) return;
