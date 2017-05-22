@@ -10,11 +10,11 @@ require('fs2/descriptors-handler')();
 var args = process.argv.slice(2);
 
 if (args.length !== 2) {
-	console.error('Usage: rename-module current/path new/path');
+	process.stdout.write('Usage: rename-module current/path new/path\n');
 	process.exit(1);
 }
 
 require('../')(args[0], args[1]).done(null, function (err) {
 	if (!err || (err.code !== 'CANNOT_CLEAR_DIR')) throw err;
-	console.error(err.message);
+	process.stdout.write(err.message + "\n");
 });

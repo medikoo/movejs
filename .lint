@@ -15,4 +15,4 @@ plusplus
 stupid
 vars
 
-predef+ Buffer, __dirname
+predef+ Buffer, __dirname, process
