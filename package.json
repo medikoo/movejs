@@ -19,17 +19,17 @@
     "url": "git://github.com/medikoo/movejs.git"
   },
   "dependencies": {
-    "es5-ext": "^0.10.11",
+    "es5-ext": "^0.10.21",
     "cjs-module": "^1.1",
     "debug": "^2.6.8",
-    "deferred": "^0.7.5",
-    "find-requires": "^0.2.2",
-    "fs2": "^0.2.3",
+    "deferred": "^0.7.6",
+    "find-requires": "^0.2.3",
+    "fs2": "^0.2.4",
     "path2": "^0.1"
   },
   "devDependencies": {
-    "fs-extra": "^0.26.5",
-    "tad": "^0.2.4",
+    "fs-extra": "^3.0.1",
+    "tad": "^0.2.7",
     "xlint": "^0.2.2",
     "xlint-jslint-medikoo": "^0.1.4"
   },
