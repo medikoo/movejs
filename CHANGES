@@ -1,3 +1,5 @@
+Further changes are described in CHANGELOG.md
+
 v1.0.5  --  2016.01.29
 * Fix move of directory index module
   (requires to directory were not recognized as require to actual module)

@@ -9,3 +9,8 @@ All notable changes to this project will be documented in this file. See [standa
 ### Bug Fixes
 
 * do not crash on ast parse error ([93ee60d](https://github.com/medikoo/movejs/commit/93ee60d))
+
+
+## Old Changelog
+
+See `CHANGES`
