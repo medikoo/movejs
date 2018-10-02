@@ -42,6 +42,15 @@ module.exports = function (t, a, d, workingPath) {
 			);
 		});
 	})(function () {
+		var from = resolve(workingPath, 'case-sensitive');
+		return t(from, resolve(workingPath, 'CASE-SENSITIVE'))(function () {
+			return deferred(
+				readFile(resolve(workingPath, 'CASE-SENSITIVE/bar.js'))(function (code) {
+					a(String(code), 'require(\'../../test.json\')\n');
+				})
+			);
+		});
+	})(function () {
 		return rmdir(workingPath, { recursive: true, force: true });
 	}).done(function () { d(); }, d);
 };
