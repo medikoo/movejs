@@ -43,6 +43,15 @@ module.exports = function (t, a, d, workingPath) {
 			});
 		});
 	})(function () {
+		var from = resolve(workingPath, 'case-sensitive/bar.js');
+		return t(from, resolve(workingPath, 'case-sensitive/BAR.js'))(function () {
+			return deferred(
+				readFile(resolve(workingPath, 'case-sensitive/BAR.js'))(function (code) {
+					a(String(code), 'require(\'../../test.json\')\n');
+				})
+			);
+		});
+	})(function () {
 		return rmdir(workingPath, { recursive: true, force: true });
 	}).done(function () { d(); }, d);
 };
