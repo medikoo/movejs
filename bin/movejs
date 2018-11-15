@@ -1,22 +1,22 @@
 #!/usr/bin/env node
 
-'use strict';
+"use strict";
 
 Error.stackTraceLimit = Infinity;
 
 if (!process.env.DEBUG) process.env.DEBUG = "*";
 
 // Prevent EMFILE errors
-require('fs2/descriptors-handler')();
+require("fs2/descriptors-handler")();
 
 var args = process.argv.slice(2);
 
 if (args.length !== 2) {
-	process.stdout.write('Usage: rename-module current/path new/path\n');
+	process.stdout.write("Usage: rename-module current/path new/path\n");
 	process.exit(1);
 }
 
-require('../')(args[0], args[1]).done(null, function (err) {
-	if (!err || (err.code !== 'CANNOT_CLEAR_DIR')) throw err;
+require("../")(args[0], args[1]).done(null, function (err) {
+	if (!err || (err.code !== "CANNOT_CLEAR_DIR")) throw err;
 	process.stdout.write(err.message + "\n");
 });
