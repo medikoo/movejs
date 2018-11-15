@@ -40,6 +40,9 @@
       "node": true
     }
   },
+  "eslintIgnore": [
+    "test/__playground/**"
+  ],
   "scripts": {
     "lint": "eslint .",
     "test": "node node_modules/tad/bin/tad"
