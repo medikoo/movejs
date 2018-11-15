@@ -1,6 +1,6 @@
 {
   "name": "movejs",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Rename/Move CJS module(s) and update all affected requires",
   "author": "Mariusz Nowak <medyk@medikoo.com> (http://www.medikoo.com/)",
   "keywords": [
