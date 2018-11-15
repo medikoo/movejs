@@ -21,7 +21,7 @@
   "dependencies": {
     "es5-ext": "^0.10.21",
     "cjs-module": "^1.1",
-    "debug": "^4.0.1",
+    "debug": "^3.2.6",
     "deferred": "^0.7.6",
     "find-requires": "^0.2.3",
     "fs2": "^0.2.4",
