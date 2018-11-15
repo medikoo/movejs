@@ -3,8 +3,9 @@
 "use strict";
 
 var copy           = require("es5-ext/object/copy")
+  , isValue        = require("es5-ext/object/is-value")
   , ensureString   = require("es5-ext/object/validate-stringifiable-value")
-  , escape         = require("es5-ext/reg-exp/escape")
+  , reEscape       = require("es5-ext/reg-exp/escape")
   , startsWith     = require("es5-ext/string/#/starts-with")
   , deferred       = require("deferred")
   , debug          = require("debug")("movejs")
@@ -34,14 +35,14 @@ var push = Array.prototype.push
   , extname = path.extname
   , resolve = path.resolve
   , findRequiresOpts = { raw: true }
-  , jsModulesPattern = new RegExp(escape(sep) + "(?:[^.]+|.+\\.js)$");
+  , jsModulesPattern = new RegExp(reEscape(sep) + "(?:[^.]+|.+\\.js)$");
 
 var readdirOpts = {
 	depth: Infinity,
 	type: { file: true },
 	ignoreRules: "git",
 	stream: true,
-	dirFilter: function (path) { return basename(path) !== "node_modules"; }
+	dirFilter: function (dirPath) { return basename(dirPath) !== "node_modules"; }
 };
 
 module.exports = function (source, dest) {
@@ -55,9 +56,7 @@ module.exports = function (source, dest) {
 	return deferred(
 		resolveRoot(source),
 		lstat(dest).then(
-			function (stats) {
-				throw new Error("Target path " + stringify(dest) + " already exists");
-			},
+			function () { throw new Error("Target path " + stringify(dest) + " already exists"); },
 			function (err) {
 				if (err && err.code === "ENOENT") return null;
 				throw err;
@@ -75,7 +74,9 @@ module.exports = function (source, dest) {
 					"placed in scope of some package"
 			);
 		}
-		if (root === source) throw new Error("Renamed directory should not be package root directory");
+		if (root === source) {
+			throw new Error("Renamed directory should not be package root directory");
+		}
 		if (!startsWith.call(dest, root + sep)) {
 			throw new Error("Cannot reliably move modules out of current package");
 		}
@@ -94,7 +95,9 @@ module.exports = function (source, dest) {
 						);
 
 						// If not a module, just rename file and exit
-						if (!is) return rename(sourceFilename, destFilename, { intermediate: true });
+						if (!is) {
+							return rename(sourceFilename, destFilename, { intermediate: true });
+						}
 
 						movedModules[sourceFilename] = destFilename;
 
@@ -107,7 +110,8 @@ module.exports = function (source, dest) {
 						// If directory was just renamed (stays in same location), we could probably
 						// ignore checking of require paths, as logically they should stay same
 						// still error happens when devs write "get out & get in" requires
-						// e.g. in 'dwa/trzy.js' module '../dwa/other.js' will break if we rename 'dwa' folder
+						// e.g. in 'dwa/trzy.js' module '../dwa/other.js' will break if we
+						// rename 'dwa' folder
 						// It would be good to not leave such issues, therefore require paths are
 						// unconditionally confirmed
 
@@ -128,25 +132,27 @@ module.exports = function (source, dest) {
 								deps = [];
 							}
 							return deferred.map(
-								deps.filter(function (data) {
+								deps.filter(function (depData) {
 									// Ignore dynamic & external package requires
-									return data.value != null && !isPathExternal(data.value);
+									return isValue(depData.value) && !isPathExternal(depData.value);
 								}),
-								function (data) {
-									var oldFullPath = resolvePosix(sourceFilenameDir, data.value)
+								function (depData) {
+									var oldFullPath = resolvePosix(sourceFilenameDir, depData.value)
 									  , oldPath
 									  , nuPath;
 
 									// If require doesn't reach out beyond moved folder ignore it
-									if (startsWith.call(oldFullPath, sourcePosix + "/")) return;
+									if (startsWith.call(oldFullPath, sourcePosix + "/")) {
+										return null;
+									}
 
 									oldPath = normalize(oldFullPath, sourceFilenameDir);
 									nuPath = normalize(oldFullPath, destFilenameDir);
 
 									// Path stays same (usual case when directory was just renamed)
-									if (nuPath === oldPath) return;
-									data.nuPath = nuPath;
-									return data;
+									if (nuPath === oldPath) return null;
+									depData.nuPath = nuPath;
+									return depData;
 								}
 							)(function (requires) {
 								var diff = 0;
@@ -184,15 +190,15 @@ module.exports = function (source, dest) {
 		});
 		return deferred(
 			dirReader(function () { return deferred.map(filePromises); }),
-			deferred(isDirShadowed(source), isDirShadowed(dest))(function (data) {
+			deferred(isDirShadowed(source), isDirShadowed(dest))(function (dirData) {
 				var customReaddirOpts = copy(readdirOpts)
-				  , filePromises = []
-				  , isSourceShadowed = data[0]
-				  , isDestShadowed = data[1];
-				customReaddirOpts.dirFilter = function (path) {
-					if (path === source) return false;
-					if (path === dest) return false;
-					return readdirOpts.dirFilter(path);
+				  , filePromises2 = []
+				  , isSourceShadowed = dirData[0]
+				  , isDestShadowed = dirData[1];
+				customReaddirOpts.dirFilter = function (dirPath) {
+					if (dirPath === source) return false;
+					if (dirPath === dest) return false;
+					return readdirOpts.dirFilter(dirPath);
 				};
 				customReaddirOpts.pattern = jsModulesPattern;
 
@@ -200,11 +206,11 @@ module.exports = function (source, dest) {
 				dirReader = readdir(root, customReaddirOpts);
 				dirReader.on("change", function (event) {
 					push.apply(
-						filePromises,
+						filePromises2,
 						event.added.map(function (file) {
 							var filename = resolve(root, file);
 							return isModule(filename)(function (is) {
-								if (!is) return;
+								if (!is) return null;
 								// Find if JS module contains a require to renamed module
 								return readFile(filename)(function (code) {
 									var dir = toPosix(dirname(filename)), deps;
@@ -218,35 +224,42 @@ module.exports = function (source, dest) {
 										);
 										deps = [];
 									}
-									return deferred.map(deps, function (data) {
+									return deferred.map(deps, function (depData) {
 										var modulePath, moduleFullPath;
 										// Ignore dynamic & external packages requires
-										if (data.value == null || isPathExternal(data.value)) return;
+										if (
+											!isValue(depData.value) ||
+											isPathExternal(depData.value)
+										) {
+											return null;
+										}
 
-										modulePath = normalize(data.value, dir);
+										modulePath = normalize(depData.value, dir);
 										moduleFullPath = resolvePosix(dir, modulePath);
 
 										if (sourcePosix === moduleFullPath) {
-											if (isSourceShadowed) return;
+											if (isSourceShadowed) return null;
 											// Require of moved directory
-											data.nuValue = normalize(destPosix, dir);
-											if (isDestShadowed) data.nuValue += "/";
-											return data;
+											depData.nuValue = normalize(destPosix, dir);
+											if (isDestShadowed) depData.nuValue += "/";
+											return depData;
 										}
 										// Ignore requires not directing to moved directory
-										if (!startsWith.call(moduleFullPath, sourcePosix + "/")) return;
+										if (!startsWith.call(moduleFullPath, sourcePosix + "/")) {
+											return null;
+										}
 
-										data.nuValue = normalize(
+										depData.nuValue = normalize(
 											destPosix +
 												"/" +
 												moduleFullPath.slice(sourcePosix.length + 1),
 											dir
 										);
-										return data;
+										return depData;
 									})(function (result) {
 										var diff;
 										result = result.filter(Boolean);
-										if (!result.length) return;
+										if (!result.length) return null;
 
 										diff = 0;
 										result.forEach(function (reqData) {
@@ -267,7 +280,7 @@ module.exports = function (source, dest) {
 						})
 					);
 				});
-				return dirReader(function () { return deferred.map(filePromises); });
+				return dirReader(function () { return deferred.map(filePromises2); });
 			})
 		);
 	})(function () { return rmdir(source); });
