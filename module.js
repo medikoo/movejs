@@ -2,8 +2,9 @@
 
 "use strict";
 
-var ensureString     = require("es5-ext/object/validate-stringifiable-value")
-  , escape           = require("es5-ext/reg-exp/escape")
+var isValue          = require("es5-ext/object/is-value")
+  , ensureString     = require("es5-ext/object/validate-stringifiable-value")
+  , reEscape         = require("es5-ext/reg-exp/escape")
   , startsWith       = require("es5-ext/string/#/starts-with")
   , deferred         = require("deferred")
   , findRequires     = require("find-requires")
@@ -38,9 +39,9 @@ var readdirOpts = {
 	depth: Infinity,
 	type: { file: true },
 	stream: true,
-	dirFilter: function (path) { return basename(path) !== "node_modules"; },
+	dirFilter: function (dirPath) { return basename(dirPath) !== "node_modules"; },
 	ignoreRules: "git",
-	pattern: new RegExp(escape(sep) + "(?:[^.]+|.+\\.js)$")
+	pattern: new RegExp(reEscape(sep) + "(?:[^.]+|.+\\.js)$")
 };
 
 module.exports = function (source, dest) {
@@ -111,16 +112,16 @@ module.exports = function (source, dest) {
 							deps = [];
 						}
 						return deferred.map(
-							deps.filter(function (data) {
+							deps.filter(function (depData) {
 								// Ignore dynamic & external package requires
-								return data.value != null && !isPathExternal(data.value);
+								return isValue(depData.value) && !isPathExternal(depData.value);
 							}),
-							function (data) {
-								var oldPath = normalize(data.value)
+							function (depData) {
+								var oldPath = normalize(depData.value)
 								  , nuPath = normalize(destDir + "/" + relPath + oldPath, destDir);
-								if (nuPath === oldPath) return;
-								data.nuPath = nuPath;
-								return data;
+								if (nuPath === oldPath) return null;
+								depData.nuPath = nuPath;
+								return depData;
 							}
 						)(function (requires) {
 							var diff = 0;
@@ -162,12 +163,12 @@ module.exports = function (source, dest) {
 					dirReader.on("change", function (event) {
 						push.apply(
 							filePromises,
-							event.added.map(function (path) {
-								var filename = resolve(root, path);
-								if (filename === source) return;
-								if (filename === dest) return;
+							event.added.map(function (filePath) {
+								var filename = resolve(root, filePath);
+								if (filename === source) return null;
+								if (filename === dest) return null;
 								return isModule(filename)(function (is) {
-									if (!is) return;
+									if (!is) return null;
 
 									// Find if JS module contains a require to renamed module
 									return readFile(filename)(function (code) {
@@ -177,11 +178,15 @@ module.exports = function (source, dest) {
 										  , expectedDir
 										  , deps;
 
-										if (expectedPathFull[0] !== ".") expectedPathFull = "./" + expectedPathFull;
+										if (expectedPathFull[0] !== ".") {
+											expectedPathFull = "./" + expectedPathFull;
+										}
 										expectedPathTrimmed = expectedPathFull.slice(
 											0, -extname(expectedPathFull).length
 										);
-										if (isSourceDirIndex) expectedDir = posixDirname(expectedPathTrimmed);
+										if (isSourceDirIndex) {
+											expectedDir = posixDirname(expectedPathTrimmed);
+										}
 										code = String(code);
 										try {
 											deps = findRequires(code, findRequiresOpts);
@@ -192,56 +197,68 @@ module.exports = function (source, dest) {
 											);
 											deps = [];
 										}
-										return deferred.map(deps, function (data) {
+										return deferred.map(deps, function (depData) {
 											var modulePath;
 											// Ignore dynamic & external package requires
-											if (data.value == null || isPathExternal(data.value)) return;
-
-											modulePath = normalize(data.value, dir);
-
-											// Check full path match, e.g. ./foo/bar.js (for ./foo/bar.js file)
-											if (expectedPathFull === modulePath) {
-												data.nuValue = normalize(relative(dir, destPosix));
-												return data;
+											if (
+												!isValue(depData.value) ||
+												isPathExternal(depData.value)
+											) {
+												return null;
 											}
-											// Check trimmed path match, e.g. ./foo/bar (for ./foo/bar.js file)
+
+											modulePath = normalize(depData.value, dir);
+
+											// Check full path match
+											// e.g. ./foo/bar.js (for ./foo/bar.js file)
+											if (expectedPathFull === modulePath) {
+												depData.nuValue = normalize(
+													relative(dir, destPosix)
+												);
+												return depData;
+											}
+											// Check trimmed path match
+											// e.g. ./foo/bar (for ./foo/bar.js file)
 											if (expectedPathTrimmed !== modulePath) {
-												if (!isSourceDirIndex) return;
+												if (!isSourceDirIndex) return null;
 												if (expectedDir + "/" !== modulePath) {
-													if (isSourceDirShadowed) return;
-													if (expectedDir !== modulePath) return;
+													if (isSourceDirShadowed) return null;
+													if (expectedDir !== modulePath) return null;
 												}
-												data.nuValue = normalize(relative(dir, destPosix));
+												depData.nuValue = normalize(
+													relative(dir, destPosix)
+												);
 												if (!isDestExtRequired) {
-													data.nuValue = data.nuValue.slice(
+													depData.nuValue = depData.nuValue.slice(
 														0, -sourceExt.length
 													);
 												}
-												return data;
+												return depData;
 											}
 											// Validate whether trimmed path matches
-											if (isSourceExtRequired == null) {
+											if (!isValue(isSourceExtRequired)) {
 												isSourceExtRequired = isExtRequired(
 													source, sourceExt
 												);
 											}
-											return isSourceExtRequired(function (is) {
-												if (!is) {
-													data.nuValue = normalize(
+											return isSourceExtRequired(function (isRequired) {
+												if (!isRequired) {
+													depData.nuValue = normalize(
 														relative(dir, destPosix)
 													);
 													if (!isDestExtRequired) {
-														data.nuValue = data.nuValue.slice(
+														depData.nuValue = depData.nuValue.slice(
 															0, -sourceExt.length
 														);
 													}
-													return data;
+													return depData;
 												}
+												return null;
 											});
 										})(function (result) {
 											var diff;
 											result = result.filter(Boolean);
-											if (!result.length) return;
+											if (!result.length) return null;
 
 											diff = 0;
 											result.forEach(function (reqData) {
