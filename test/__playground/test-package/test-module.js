@@ -1,1 +1,1 @@
-require('./test-module-dir');
+require("./test-module-dir");

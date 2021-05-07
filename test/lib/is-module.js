@@ -1,9 +1,8 @@
 "use strict";
 
 var deferred = require("deferred")
-  , resolve = require("path").resolve
-
-  , pgPath = resolve(__dirname, "../__playground");
+  , resolve  = require("path").resolve
+  , pgPath   = resolve(__dirname, "../__playground");
 
 module.exports = function (t, a, d) {
 	deferred(

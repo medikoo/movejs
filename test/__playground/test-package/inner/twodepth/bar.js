@@ -1,3 +1,3 @@
-require('../../foo');
-require('./marko');
-require('./elo/miszka');
+require("../../foo");
+require("./marko");
+require("./elo/miszka");

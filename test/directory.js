@@ -12,37 +12,42 @@ var pgInitPath = resolve(__dirname, "__playground/test-package")
 
 module.exports = function (t, a, d, workingPath) {
 	if (!workingPath) workingPath = pgWorkingPath;
-	copy(pgInitPath, workingPath)(function () {
+	copy(
+		pgInitPath, workingPath
+	)(function () {
 		var from = resolve(workingPath, "inner");
-		return t(from, resolve(workingPath, "outer/deep"))(function () {
+		return t(
+			from, resolve(workingPath, "outer/deep")
+		)(function () {
 			return deferred(
 				readFile(resolve(workingPath, "outer/deep/twodepth/bar.js"))(function (code) {
 					a(
 						String(code),
-						"require('../../../foo');\nrequire('./marko');\n" +
-							"require('./elo/miszka');\n",
+						"require(\"../../../foo\");\nrequire(\"./marko\");\n" +
+							"require(\"./elo/miszka\");\n",
 						"bar.js module"
 					);
 				}),
 				readFile(resolve(workingPath, "foo.js"))(function (code) {
 					a(
 						String(code),
-						"require('./outer/deep/twodepth/bar');\n" +
-							"require('./outer/deep/twodepth/marko');\n" +
-							"require('./outer/deep/twodepth/bar');\nrequire('./outer/deep/');\n",
+						"require(\"./outer/deep/twodepth/bar\");\n" +
+							"require(\"./outer/deep/twodepth/marko\");\n" +
+							"require(\"./outer/deep/twodepth/bar\");\n" +
+							"require(\"./outer/deep/\");\n",
 						"Root module"
 					);
 				}),
 				readFile(resolve(workingPath, "outer/deep/twodepth/marko.js"))(function (code) {
-					a(String(code), "require('./bar');\n", "marko.js module");
+					a(String(code), "require(\"./bar\");\n", "marko.js module");
 				}),
 				readFile(resolve(workingPath, "outer/deep/twodepth/elo/miszka.js"))(function (
 					code
 				) {
 					a(
 						String(code),
-						"require('../bar');\nrequire('../../../../foo');\n" +
-							"require('../bar');\n",
+						"require(\"../bar\");\nrequire(\"../../../../foo\");\n" +
+							"require(\"../bar\");\n",
 						"Deeper module"
 					);
 				}),
@@ -54,8 +59,7 @@ module.exports = function (t, a, d, workingPath) {
 				})
 			);
 		});
-	})(function () { return rmdir(workingPath, { recursive: true, force: true }); }).done(
-		function () { d(); },
-		d
-	);
+	})(function () {
+		return rmdir(workingPath, { recursive: true, force: true });
+	}).done(function () { d(); }, d);
 };

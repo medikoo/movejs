@@ -1,1 +1,1 @@
-require('./bar');
+require("./bar");

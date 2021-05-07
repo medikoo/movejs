@@ -172,9 +172,7 @@ module.exports = function (source, dest) {
 								return code;
 							});
 						})(function (nuCode) {
-							return lstat(
-								sourceFilename
-							)(function (stats) {
+							return lstat(sourceFilename)(function (stats) {
 								return deferred(
 									writeFile(destFilename, nuCode, {
 										mode: stats.mode,
@@ -190,7 +188,9 @@ module.exports = function (source, dest) {
 		});
 		return deferred(
 			dirReader(function () { return deferred.map(filePromises); }),
-			deferred(isDirShadowed(source), isDirShadowed(dest))(function (dirData) {
+			deferred(
+				isDirShadowed(source), isDirShadowed(dest)
+			)(function (dirData) {
 				var customReaddirOpts = copy(readdirOpts)
 				  , filePromises2 = []
 				  , isSourceShadowed = dirData[0]

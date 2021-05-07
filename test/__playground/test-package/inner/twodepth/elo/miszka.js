@@ -1,3 +1,3 @@
-require('../bar');
-require('../../../foo');
-require('../bar');
+require("../bar");
+require("../../../foo");
+require("../bar");

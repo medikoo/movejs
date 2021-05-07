@@ -150,9 +150,9 @@ module.exports = function (source, dest) {
 				// In new location module may not be requireable with no extension provided
 				// we need to assure that in such cases requires are not broken
 				deferred(
-					isExtRequired(dest, sourceExt)(function (result) {
-						isDestExtRequired = result;
-					}),
+					isExtRequired(
+						dest, sourceExt
+					)(function (result) { isDestExtRequired = result; }),
 					isSourceDirIndex &&
 						isDirShadowed(sourceDir)(function (result) {
 							isSourceDirShadowed = result;

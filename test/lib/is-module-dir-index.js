@@ -2,14 +2,11 @@
 
 var deferred = require("deferred")
   , resolve  = require("path").resolve
-
-  , pgPath = resolve(__dirname, "../__playground");
+  , pgPath   = resolve(__dirname, "../__playground");
 
 module.exports = function (t, a, d) {
 	return deferred(
-		t(pgPath + "some-dir/foo.js")(function (result) {
-			a(result, false, "Index: Non index");
-		}),
+		t(pgPath + "some-dir/foo.js")(function (result) { a(result, false, "Index: Non index"); }),
 		t(resolve(pgPath, "some-dir/index.js"))(function (result) {
 			a(result, true, "Index: index");
 		}),
