@@ -1,54 +1,54 @@
 {
-  "name": "movejs",
-  "version": "1.0.8",
-  "description": "Rename/Move CJS module(s) and update all affected requires",
-  "author": "Mariusz Nowak <medyk@medikoo.com> (http://www.medikoo.com/)",
-  "keywords": [
-    "cjs",
-    "move",
-    "rename",
-    "module",
-    "refactor",
-    "mv"
-  ],
-  "bin": {
-    "movejs": "./bin/movejs"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/medikoo/movejs.git"
-  },
-  "dependencies": {
-    "es5-ext": "^0.10.21",
-    "cjs-module": "^1.1",
-    "debug": "^3.2.6",
-    "deferred": "^0.7.6",
-    "find-requires": "^0.2.3",
-    "fs2": "^0.2.4",
-    "path2": "^0.1"
-  },
-  "devDependencies": {
-    "eslint": "^5.9",
-    "eslint-config-medikoo-es5": "^1.7.3",
-    "fs-extra": "1",
-    "tad": "^0.2.7"
-  },
-  "eslintConfig": {
-    "extends": "medikoo-es5",
-    "root": true,
-    "env": {
-      "node": true
-    },
-    "rules": {
-      "max-lines-per-function": "off"
-    }
-  },
-  "eslintIgnore": [
-    "test/__playground/**"
-  ],
-  "scripts": {
-    "lint": "eslint .",
-    "test": "node node_modules/tad/bin/tad"
-  },
-  "license": "ISC"
+	"name": "movejs",
+	"version": "1.0.8",
+	"description": "Rename/Move CJS module(s) and update all affected requires",
+	"author": "Mariusz Nowak <medyk@medikoo.com> (http://www.medikoo.com/)",
+	"keywords": [
+		"cjs",
+		"move",
+		"rename",
+		"module",
+		"refactor",
+		"mv"
+	],
+	"bin": {
+		"movejs": "./bin/movejs"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git://github.com/medikoo/movejs.git"
+	},
+	"dependencies": {
+		"es5-ext": "^0.10.21",
+		"cjs-module": "^1.1",
+		"debug": "^3.2.6",
+		"deferred": "^0.7.6",
+		"find-requires": "^0.2.3",
+		"fs2": "^0.2.4",
+		"path2": "^0.1"
+	},
+	"devDependencies": {
+		"eslint": "^5.9",
+		"eslint-config-medikoo-es5": "^1.7.3",
+		"fs-extra": "1",
+		"tad": "^0.2.7"
+	},
+	"eslintConfig": {
+		"extends": "medikoo-es5",
+		"root": true,
+		"env": {
+			"node": true
+		},
+		"rules": {
+			"max-lines-per-function": "off"
+		}
+	},
+	"eslintIgnore": [
+		"test/__playground/**"
+	],
+	"scripts": {
+		"lint": "eslint .",
+		"test": "node node_modules/tad/bin/tad"
+	},
+	"license": "ISC"
 }
