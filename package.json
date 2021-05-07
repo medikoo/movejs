@@ -32,7 +32,7 @@
 		"eslint-config-medikoo-es5": "^1.7.3",
 		"fs-extra": "1",
 		"prettier-elastic": "^2.2.1",
-		"tad": "^0.2.7"
+		"tad": "^3.0.1"
 	},
 	"eslintConfig": {
 		"extends": "medikoo-es5",
